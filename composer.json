@@ -1,0 +1,27 @@
+{
+	"name": "harmim/images",
+	"description": "Image service for Nette Framework based on ImageMagick",
+	"keywords": ["nette", "image", "imagick"],
+	"type": "library",
+	"homepage": "https://github.com/harmim/images",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Dominik Harmim",
+			"email": "harmim6@gmail.com"
+		}
+	],
+	"minimum-stability": "dev",
+	"require": {
+		"php": ">= 5.3.1",
+		"ext-imagick": "*",
+		"nette/di": "~2.3.9",
+		"nette/utils": "~2.3.7",
+		"latte/latte": "~2.3.10"
+	},
+	"autoload": {
+		"psr-4": {
+			"Harmim\\Images\\": "src/"
+		}
+	}
+}
