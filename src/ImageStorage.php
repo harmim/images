@@ -302,11 +302,14 @@ class ImageStorage extends Nette\Object
 			$this->config['origDir'],
 			$this->config['compressionDir'],
 		];
-		/** @var \SplFileInfo $file */
-		foreach (Nette\Utils\Finder::find($fileName)
-			->from($this->config['baseDir'])
-			->exclude($excludedFolders) as $file) {
-			@unlink($file->getRealPath());
+
+		if (file_exists($this->config['baseDir'])) {
+			/** @var \SplFileInfo $file */
+			foreach (Nette\Utils\Finder::find($fileName)
+				->from($this->config['baseDir'])
+				->exclude($excludedFolders) as $file) {
+				@unlink($file->getRealPath());
+			}
 		}
 
 		return TRUE;
