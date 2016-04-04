@@ -68,7 +68,7 @@ class Macros extends Latte\Macros\MacroSet
 		$imageStorage = $args['storage'];
 		unset($args['storage']);
 
-		$lazyLoad = isset($args['lazy']) ? (bool) $args['lazy'] : FALSE;
+		$lazyLoad = isset($args['lazy']) ? (bool) $args['lazy'] : in_array('lazy', $args, TRUE) !== FALSE;
 		$alt = ! empty($args['alt']) ? $args['alt'] : '';
 		$classes = ! empty($args['class']) ? $args['class'] : NULL;
 		$title = ! empty($args['title']) ? $args['title'] : NULL;
