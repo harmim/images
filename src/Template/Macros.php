@@ -20,6 +20,7 @@ class Macros extends Latte\Macros\MacroSet
 		$me = new static($compiler);
 
 		$me->addMacro('img', [$me, 'macroImg']);
+		$me->addMacro('imgLink', [$me, 'macroImgLink']);
 	}
 
 
@@ -31,6 +32,37 @@ class Macros extends Latte\Macros\MacroSet
 	 * @return string
 	 */
 	public function macroImg(Latte\MacroNode $node, Latte\PhpWriter $writer)
+	{
+		list($img, $type) = $this->getImageFromNode($node);
+
+		return '
+			$args = [' . ($type ? "'type' => '$type'," : '') . "'storage' => " . '$imageStorage' . ($node->args ? ', ' . $writer->formatArgs() : '') . '];
+			echo ' . get_class($this) .'::img(' . $img . ', $args);
+		';
+	}
+
+
+	/**
+	 * @param Latte\MacroNode $node
+	 * @param Latte\PhpWriter $writer
+	 * @return string
+	 */
+	public function macroImgLink(Latte\MacroNode $node, Latte\PhpWriter $writer)
+	{
+		list($img, $type) = $this->getImageFromNode($node);
+
+		return '
+			$args = [' . ($type ? "'type' => '$type'," : '') . "'storage' => " . '$imageStorage' . ($node->args ? ', ' . $writer->formatArgs() : '') . '];
+			echo ' . get_class($this) . '::imgLink(' . $img . ', $args);
+		';
+	}
+
+
+	/**
+	 * @param Latte\MacroNode $node
+	 * @return array
+	 */
+	protected function getImageFromNode(Latte\MacroNode $node)
 	{
 		$img = $node->tokenizer->fetchWord();
 		$type = NULL;
@@ -44,10 +76,7 @@ class Macros extends Latte\Macros\MacroSet
 			}
 		}
 
-		return '
-			$args = [' . ($type ? "'type' => '$type'," : '') . "'storage' => " . '$imageStorage' . ($node->args ? ', ' . $writer->formatArgs() : '') . '];
-			echo ' . get_class($this) .'::img(' . $img . ', $args);
-		';
+		return [$img, $type];
 	}
 
 
@@ -56,24 +85,16 @@ class Macros extends Latte\Macros\MacroSet
 	 *
 	 * @param string|Harmim\Images\IItem $img
 	 * @param array $args
-	 * @return string|null
+	 * @return string
 	 */
 	public static function img($img, array $args)
 	{
-		if (empty($args['storage']) || ! $args['storage'] instanceof Harmim\Images\ImageStorage) {
-			throw new Nette\InvalidArgumentException('The template was not forwarded instance of ' . Harmim\Images\ImageStorage::class . ' to macro img, it should have in variable $imageStorage');
-		}
+		if ($image = Harmim\Images\Template\Macros::getImage($img, $args)) {
+			$lazyLoad = isset($args['lazy']) ? (bool)$args['lazy'] : in_array('lazy', $args, TRUE) !== FALSE;
+			$alt = ! empty($args['alt']) ? $args['alt'] : '';
+			$classes = ! empty($args['class']) ? $args['class'] : NULL;
+			$title = ! empty($args['title']) ? $args['title'] : NULL;
 
-		/** @var Harmim\Images\ImageStorage $imageStorage */
-		$imageStorage = $args['storage'];
-		unset($args['storage']);
-
-		$lazyLoad = isset($args['lazy']) ? (bool) $args['lazy'] : in_array('lazy', $args, TRUE) !== FALSE;
-		$alt = ! empty($args['alt']) ? $args['alt'] : '';
-		$classes = ! empty($args['class']) ? $args['class'] : NULL;
-		$title = ! empty($args['title']) ? $args['title'] : NULL;
-
-		if ($image = $imageStorage->getImage($img, $args)) {
 			$staticImg = Nette\Utils\Html::el('img', [
 				'src' => $image->src,
 				'width' => $image->width,
@@ -106,6 +127,40 @@ class Macros extends Latte\Macros\MacroSet
 		}
 
 		return NULL;
+	}
+
+
+	/**
+	 * @param string|Harmim\Images\IItem $img
+	 * @param array $args
+	 * @return string
+	 */
+	public static function imgLink($img, array $args)
+	{
+		if ($image = Harmim\Images\Template\Macros::getImage($img, $args)) {
+			return $image->getSrc();
+		}
+
+		return NULL;
+	}
+
+
+	/**
+	 * @param string|Harmim\Images\IItem $img
+	 * @param array $args
+	 * @return Harmim\Images\Image
+	 */
+	public static function getImage($img, array $args)
+	{
+		if (empty($args['storage']) || ! $args['storage'] instanceof Harmim\Images\ImageStorage) {
+			throw new Nette\InvalidArgumentException('The template was not forwarded instance of ' . Harmim\Images\ImageStorage::class . ' to macro img, it should have in variable $imageStorage');
+		}
+
+		/** @var Harmim\Images\ImageStorage $imageStorage */
+		$imageStorage = $args['storage'];
+		unset($args['storage']);
+
+		return $imageStorage->getImage($img, $args);
 	}
 
 }

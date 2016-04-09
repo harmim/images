@@ -17,7 +17,7 @@ trait TImageStorage
 	protected $imageStorage;
 
 
-	public function inject(Harmim\Images\ImageStorage $imageStorage)
+	public function injectImageStorage(Harmim\Images\ImageStorage $imageStorage)
 	{
 		$this->imageStorage = $imageStorage;
 	}
