@@ -8,7 +8,6 @@
 namespace Harmim\Images;
 
 use Nette;
-use Tracy;
 
 
 class ImageStorage extends Nette\Object
@@ -142,7 +141,7 @@ class ImageStorage extends Nette\Object
 
 			return [$imagick->getImageWidth(), $imagick->getImageHeight()];
 		} catch (\ImagickException $e) {
-			Tracy\Debugger::log($e);
+			trigger_error($e, E_USER_WARNING);
 			return [];
 		}
 	}
