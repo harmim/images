@@ -10,6 +10,9 @@ namespace Harmim\Images;
 use Harmim;
 
 
+/**
+ * This trait can be used in component attached to Nette\Application\UI\PresenterComponent
+ */
 trait TImageStorage
 {
 
@@ -23,9 +26,9 @@ trait TImageStorage
 	}
 
 
-	protected function createTemplate($class = NULL)
+	protected function createTemplate()
 	{
-		$template = parent::createTemplate($class);
+		$template = parent::createTemplate();
 		$template->imageStorage = $this->imageStorage;
 
 		return $template;

@@ -10,6 +10,11 @@ namespace Harmim\Images;
 use Nette;
 
 
+/**
+ * @property string $src
+ * @property int $width
+ * @property int $height
+ */
 class Image extends Nette\Object
 {
 
@@ -41,6 +46,15 @@ class Image extends Nette\Object
 
 
 	/**
+	 * @param string $src
+	 */
+	public function setSrc($src)
+	{
+		$this->src = $src;
+	}
+
+
+	/**
 	 * @return int
 	 */
 	public function getWidth()
@@ -50,11 +64,29 @@ class Image extends Nette\Object
 
 
 	/**
+	 * @param int $width
+	 */
+	public function setWidth($width)
+	{
+		$this->width = $width;
+	}
+
+
+	/**
 	 * @return int
 	 */
 	public function getHeight()
 	{
 		return $this->height;
+	}
+
+
+	/**
+	 * @param int $height
+	 */
+	public function setHeight($height)
+	{
+		$this->height = $height;
 	}
 
 }

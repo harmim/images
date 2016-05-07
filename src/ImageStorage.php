@@ -7,6 +7,7 @@
 
 namespace Harmim\Images;
 
+use Imagick;
 use Nette;
 
 
@@ -26,10 +27,10 @@ class ImageStorage extends Nette\Object
 			$this->types = $config['types'];
 		}
 		$this->config = $config;
-		$this->config['baseDir'] = $baseDir = $config['wwwDir'] . '/' . $config['imagesDir'];
-		$this->config['placeholder'] = $config['wwwDir'] . '/' . $config['placeholder'];
-		$this->config['absoluteOrigDir'] = $baseDir . '/' . $config['origDir'];
-		$this->config['absoluteCompressionDir'] = $baseDir . '/' . $config['compressionDir'];
+		$this->config['baseDir'] = $baseDir = $config['wwwDir'] . DIRECTORY_SEPARATOR . $config['imagesDir'];
+		$this->config['placeholder'] = $config['wwwDir'] . DIRECTORY_SEPARATOR . $config['placeholder'];
+		$this->config['absoluteOrigDir'] = $baseDir . DIRECTORY_SEPARATOR . $config['origDir'];
+		$this->config['absoluteCompressionDir'] = $baseDir . DIRECTORY_SEPARATOR . $config['compressionDir'];
 	}
 
 
@@ -41,18 +42,14 @@ class ImageStorage extends Nette\Object
 	public function getImage($fileName, array $args = [])
 	{
 		if ($fileName instanceof IItem) {
-			$fileName = $fileName->getFilename();
+			$fileName = $fileName->getFileName();
 		}
 
 		$options = $this->getOptions($args);
 		$srcPath = $this->getCompressionPath($fileName, $options);
 
 		if ( ! $fileName || ! file_exists($srcPath)) {
-			if (file_exists($options['placeholder'])) {
-				return new Image($this->createSrc($options['placeholder']), $options['width'], $options['height']);
-			} else {
-				return [];
-			}
+			return $this->getPlaceholderImage($options);
 		}
 
 		$destPath = $this->getDestPath($fileName, $options);
@@ -63,11 +60,7 @@ class ImageStorage extends Nette\Object
 			if ($image = $this->createImage($srcPath, $destPath, $options)) {
 				list($width, $height) = $image;
 			} else {
-				if (file_exists($options['placeholder'])) {
-					return new Image($this->createSrc($options['placeholder']), $options['width'], $options['height']);
-				} else {
-					return [];
-				}
+				return $this->getPlaceholderImage($options);
 			}
 		}
 
@@ -88,24 +81,24 @@ class ImageStorage extends Nette\Object
 		}
 
 		try {
-			$imagick = new \Imagick();
+			$imagick = new Imagick();
 
-			$this->checkDir($destPath);
+			Nette\Utils\FileSystem::createDir(dirname($destPath));
 
 			$imagick->readImage($srcPath);
 			$mimetype = $imagick->getImageMimeType();
 
 			if ($imagick->getImageWidth() > $options['width'] || $imagick->getImageHeight() > $options['height']) {
-				$imagick->resizeImage($options['width'], $options['height'], \Imagick::FILTER_BESSEL, 0.7, TRUE);
+				$imagick->resizeImage($options['width'], $options['height'], Imagick::FILTER_BESSEL, 0.7, TRUE);
 			}
 
 			if ($options['square']) {
 				$squareColor = 'gray97';
-				if ($mimetype === image_type_to_mime_type(IMAGETYPE_PNG) && $imagick->getImageAlphaChannel() === \Imagick::ALPHACHANNEL_TRANSPARENT) {
+				if ($mimetype === image_type_to_mime_type(IMAGETYPE_PNG) && $imagick->getImageAlphaChannel() === Imagick::ALPHACHANNEL_TRANSPARENT) {
 					$squareColor = 'transparent';
 				}
 
-				$blank = new \Imagick();
+				$blank = new Imagick();
 				$squareWidth = $options['width'];
 				$squareHeight = $options['height'];
 				if ($imagick->getImageWidth() < $squareWidth && $imagick->getImageHeight() < $squareHeight) {
@@ -113,20 +106,20 @@ class ImageStorage extends Nette\Object
 					$squareHeight = $imagick->getImageHeight();
 				}
 
-				if ($imagick->getimagecolorspace() === \Imagick::COLORSPACE_CMYK) {
-					$imagick->negateimage(FALSE);
+				if ($imagick->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
+					$imagick->negateImage(FALSE);
 				}
 
 				$blank->newImage($squareWidth, $squareHeight, $squareColor);
 				$blank->setImageFormat('png');
-				$blank->compositeImage($imagick, \Imagick::COMPOSITE_OVER, $squareWidth / 2 - $imagick->getImageWidth() / 2, $squareHeight / 2 - $imagick->getImageHeight() / 2);
+				$blank->compositeImage($imagick, Imagick::COMPOSITE_OVER, $squareWidth / 2 - $imagick->getImageWidth() / 2, $squareHeight / 2 - $imagick->getImageHeight() / 2);
 				$imagick = $blank;
 			}
 
 			if ($options['compression']) {
 				switch ($mimetype) {
 					case image_type_to_mime_type(IMAGETYPE_JPEG):
-						$imagick->setImageCompression(\Imagick::COMPRESSION_JPEG);
+						$imagick->setImageCompression(Imagick::COMPRESSION_JPEG);
 						$imagick->setImageCompressionQuality($options['compression']);
 						break;
 
@@ -144,6 +137,19 @@ class ImageStorage extends Nette\Object
 			trigger_error($e, E_USER_WARNING);
 			return [];
 		}
+	}
+
+
+	/**
+	 * @return Image|NULL
+	 */
+	protected function getPlaceholderImage(array $options)
+	{
+		if (file_exists($options['placeholder'])) {
+			return new Image($this->createSrc($options['placeholder']), $options['width'], $options['height']);
+		}
+
+		return NULL;
 	}
 
 
@@ -167,18 +173,23 @@ class ImageStorage extends Nette\Object
 		if ( ! $options) {
 			$options = $this->config;
 		}
-		$path = $options['absoluteCompressionDir'] . '/' . $this->getSubDir($fileName) . '/' . $fileName;
+		$path = $options['absoluteCompressionDir'] . DIRECTORY_SEPARATOR . $this->getSubDir($fileName) . DIRECTORY_SEPARATOR . $fileName;
 
 		return $path;
 	}
 
 
+	/**
+	 * @param string $fileName
+	 * @param array $options
+	 * @return string
+	 */
 	protected function getOrigPath($fileName, array $options = [])
 	{
 		if ( ! $options) {
 			$options = $this->config;
 		}
-		$path = $options['absoluteOrigDir'] . '/' . $this->getSubDir($fileName) . '/' . $fileName;
+		$path = $options['absoluteOrigDir'] . DIRECTORY_SEPARATOR . $this->getSubDir($fileName) . DIRECTORY_SEPARATOR . $fileName;
 
 		return $path;
 	}
@@ -201,7 +212,7 @@ class ImageStorage extends Nette\Object
 		} else {
 			$destDir = "w{$options['width']}h{$options['height']}";
 		}
-		$path = $this->config['baseDir'] . '/' . $destDir . '/' . $this->getSubDir($fileName) . '/' . $fileName;
+		$path = $this->config['baseDir'] . DIRECTORY_SEPARATOR . $destDir . DIRECTORY_SEPARATOR . $this->getSubDir($fileName) . DIRECTORY_SEPARATOR . $fileName;
 
 		return $path;
 	}
@@ -232,29 +243,14 @@ class ImageStorage extends Nette\Object
 
 
 	/**
-	 * @param string $fileName
-	 * @return void
-	 */
-	protected function checkDir($path)
-	{
-		$dir = dirname($path);
-
-		if ( ! is_dir($dir)) {
-			mkdir($dir, 0777, TRUE);
-		}
-	}
-
-
-	/**
 	 * @param Nette\Http\FileUpload $file
-	 * @return string|null
+	 * @return string|NULL
 	 */
 	public function saveUpload(Nette\Http\FileUpload $file)
 	{
 		if ($file->isOk()) {
 			$fileName = $this->getFileNameForSave($file->getName());
 			$origPath = $this->getOrigPath($fileName);
-			$this->checkDir($origPath);
 			$file->move($origPath);
 			if ($this->createImage($origPath, $this->getCompressionPath($fileName))) {
 				return basename($origPath);
@@ -271,9 +267,8 @@ class ImageStorage extends Nette\Object
 	 */
 	protected function getFileNameForSave($fileName)
 	{
-		$nameParts = pathinfo($fileName);
-		$name = str_replace('-', '_', Nette\Utils\Strings::webalize($nameParts['filename']));
-		$name = $name . substr(md5($name), -6) . '.' . $nameParts['extension'];
+		$name = Nette\Utils\Random::generate(10);
+		$name = $name . substr(md5($name), -6) . '.' . pathinfo($fileName, PATHINFO_EXTENSION);
 
 		return $name;
 	}
@@ -287,13 +282,13 @@ class ImageStorage extends Nette\Object
 	public function deleteImage($fileName, array $types = [])
 	{
 		if ( ! $types) {
-			@unlink($this->getOrigPath($fileName));
-			@unlink($this->getCompressionPath($fileName));
+			Nette\Utils\FileSystem::delete($this->getOrigPath($fileName));
+			Nette\Utils\FileSystem::delete($this->getCompressionPath($fileName));
 		}
 
 		foreach ($this->types as $key => $value) {
 			if ( ! $types || ! in_array($key, $types)) {
-				@unlink($this->getDestPath($fileName, ['type' => $key]));
+				Nette\Utils\FileSystem::delete($this->getDestPath($fileName, ['type' => $key]));
 			}
 		}
 
@@ -307,7 +302,7 @@ class ImageStorage extends Nette\Object
 			foreach (Nette\Utils\Finder::find($fileName)
 				->from($this->config['baseDir'])
 				->exclude($excludedFolders) as $file) {
-				@unlink($file->getRealPath());
+				Nette\Utils\FileSystem::delete($file->getRealPath());
 			}
 		}
 

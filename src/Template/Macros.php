@@ -36,13 +36,15 @@ class Macros extends Latte\Macros\MacroSet
 		list($img, $type) = $this->getImageFromNode($node);
 
 		return '
-			$args = [' . ($type ? "'type' => '$type'," : '') . "'storage' => " . '$imageStorage' . ($node->args ? ', ' . $writer->formatArgs() : '') . '];
+			$args = [' . ($type ? "'type' => '$type', " : NULL) . "'storage' => " . '$imageStorage' . ($node->args ? ', ' . $writer->formatArgs() : NULL) . '];
 			echo ' . get_class($this) .'::img(' . $img . ', $args);
 		';
 	}
 
 
 	/**
+	 * {imgLink $img [type]}
+
 	 * @param Latte\MacroNode $node
 	 * @param Latte\PhpWriter $writer
 	 * @return string
@@ -52,7 +54,7 @@ class Macros extends Latte\Macros\MacroSet
 		list($img, $type) = $this->getImageFromNode($node);
 
 		return '
-			$args = [' . ($type ? "'type' => '$type'," : '') . "'storage' => " . '$imageStorage' . ($node->args ? ', ' . $writer->formatArgs() : '') . '];
+			$args = [' . ($type ? "'type' => '$type', " : NULL) . "'storage' => " . '$imageStorage' . ($node->args ? ', ' . $writer->formatArgs() : NULL) . '];
 			echo ' . get_class($this) . '::imgLink(' . $img . ', $args);
 		';
 	}
@@ -62,7 +64,7 @@ class Macros extends Latte\Macros\MacroSet
 	 * @param Latte\MacroNode $node
 	 * @return array
 	 */
-	protected function getImageFromNode(Latte\MacroNode $node)
+	private function getImageFromNode(Latte\MacroNode $node)
 	{
 		$img = $node->tokenizer->fetchWord();
 		$type = NULL;
@@ -89,16 +91,16 @@ class Macros extends Latte\Macros\MacroSet
 	 */
 	public static function img($img, array $args)
 	{
-		if ($image = Harmim\Images\Template\Macros::getImage($img, $args)) {
-			$lazyLoad = isset($args['lazy']) ? (bool)$args['lazy'] : in_array('lazy', $args, TRUE) !== FALSE;
+		if ($image = \Harmim\Images\Template\Macros::getImage($img, $args)) {
+			$lazyLoad = isset($args['lazy']) ? (bool) $args['lazy'] : in_array('lazy', $args, TRUE) !== FALSE;
 			$alt = ! empty($args['alt']) ? $args['alt'] : '';
 			$classes = ! empty($args['class']) ? $args['class'] : NULL;
 			$title = ! empty($args['title']) ? $args['title'] : NULL;
 
 			$staticImg = Nette\Utils\Html::el('img', [
-				'src' => $image->src,
-				'width' => $image->width,
-				'height' => $image->height,
+				'src' => $image->getSrc(),
+				'width' => $image->getWidth(),
+				'height' => $image->getHeight(),
 				'alt' => $alt,
 				'title' => $title
 			]);
@@ -108,14 +110,14 @@ class Macros extends Latte\Macros\MacroSet
 				$lazyLoadEl = Nette\Utils\Html::el();
 				$lazyLoadImg = $lazyLoadEl->create('img', [
 					'src' => 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==',
-					'width' => $image->width,
-					'height' => $image->height,
+					'width' => $image->getWidth(),
+					'height' => $image->getHeight(),
 					'alt' => $alt,
 					'title' => $title,
 				]);
 				$lazyLoadImg->class[] = $classes;
 				$lazyLoadImg->class[] = 'lazy';
-				$lazyLoadImg->data['original'] = $image->src;
+				$lazyLoadImg->data['original'] = $image->getSrc();
 
 				$lazyLoadEl->create('span', ['class' => 'lazy-spinner']);
 				$lazyLoadEl->create('noscript')->add($staticImg);
@@ -137,7 +139,7 @@ class Macros extends Latte\Macros\MacroSet
 	 */
 	public static function imgLink($img, array $args)
 	{
-		if ($image = Harmim\Images\Template\Macros::getImage($img, $args)) {
+		if ($image = \Harmim\Images\Template\Macros::getImage($img, $args)) {
 			return $image->getSrc();
 		}
 
@@ -152,8 +154,8 @@ class Macros extends Latte\Macros\MacroSet
 	 */
 	public static function getImage($img, array $args)
 	{
-		if (empty($args['storage']) || ! $args['storage'] instanceof Harmim\Images\ImageStorage) {
-			throw new Nette\InvalidArgumentException('The template was not forwarded instance of ' . Harmim\Images\ImageStorage::class . ' to macro img, it should have in variable $imageStorage');
+		if (empty($args['storage']) || ! $args['storage'] instanceof \Harmim\Images\ImageStorage) {
+			throw new Nette\InvalidArgumentException('The template was not forwarded instance of ' . \Harmim\Images\ImageStorage::class . ' to macro img/imgLink, it should have in variable $imageStorage.');
 		}
 
 		/** @var Harmim\Images\ImageStorage $imageStorage */
