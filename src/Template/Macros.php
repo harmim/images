@@ -117,7 +117,7 @@ class Macros extends Latte\Macros\MacroSet
 				]);
 				$lazyLoadImg->class[] = $classes;
 				$lazyLoadImg->class[] = 'lazy';
-				$lazyLoadImg->data['original'] = $image->getSrc();
+				$lazyLoadImg->data('original', $image->getSrc());
 
 				$lazyLoadEl->create('span', ['class' => 'lazy-spinner']);
 				$lazyLoadEl->create('noscript')->add($staticImg);
