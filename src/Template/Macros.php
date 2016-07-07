@@ -15,6 +15,9 @@ use Nette;
 class Macros extends Latte\Macros\MacroSet
 {
 
+	/**
+	 * @param Latte\Compiler $compiler
+	 */
 	public static function install(Latte\Compiler $compiler)
 	{
 		$me = new static($compiler);
@@ -25,8 +28,8 @@ class Macros extends Latte\Macros\MacroSet
 
 
 	/**
-	 * {img $img [type] {alt, title}}
-
+	 * {img $img type alt => '...'[, width, height, lazy, title, class]}
+	 *
 	 * @param Latte\MacroNode $node
 	 * @param Latte\PhpWriter $writer
 	 * @return string
@@ -43,8 +46,8 @@ class Macros extends Latte\Macros\MacroSet
 
 
 	/**
-	 * {imgLink $img [type]}
-
+	 * {imgLink $img type}
+	 *
 	 * @param Latte\MacroNode $node
 	 * @param Latte\PhpWriter $writer
 	 * @return string
@@ -87,7 +90,7 @@ class Macros extends Latte\Macros\MacroSet
 	 *
 	 * @param string|Harmim\Images\IItem $img
 	 * @param array $args
-	 * @return string
+	 * @return string|NULL
 	 */
 	public static function img($img, array $args)
 	{
@@ -102,7 +105,7 @@ class Macros extends Latte\Macros\MacroSet
 				'width' => $image->getWidth(),
 				'height' => $image->getHeight(),
 				'alt' => $alt,
-				'title' => $title
+				'title' => $title,
 			]);
 			$staticImg->class[] = $classes;
 
@@ -120,7 +123,7 @@ class Macros extends Latte\Macros\MacroSet
 				$lazyLoadImg->data('original', $image->getSrc());
 
 				$lazyLoadEl->create('span', ['class' => 'lazy-spinner']);
-				$lazyLoadEl->create('noscript')->add($staticImg);
+				$lazyLoadEl->create('noscript')->addHtml($staticImg);
 
 				return (string) $lazyLoadImg;
 			}
@@ -135,7 +138,7 @@ class Macros extends Latte\Macros\MacroSet
 	/**
 	 * @param string|Harmim\Images\IItem $img
 	 * @param array $args
-	 * @return string
+	 * @return string|NULL
 	 */
 	public static function imgLink($img, array $args)
 	{

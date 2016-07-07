@@ -3,6 +3,4 @@
 
 # images
 
-### Image service for [Nette Framework](https://nette.org) based on [ImageMagick](http://php.net/manual/en/book.imagick.php)
-
-_imagick extension for PHP is required (https://pecl.php.net/package/imagick)_
+### Image service for [Nette Framework](https://nette.org)

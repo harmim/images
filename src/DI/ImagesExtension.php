@@ -29,6 +29,9 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 	];
 
 
+	/**
+	 * @inheritdoc
+	 */
 	public function loadConfiguration()
 	{
 		$builder = $this->getContainerBuilder();
@@ -39,15 +42,21 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 	}
 
 
+	/**
+	 * @inheritdoc
+	 */
 	public function beforeCompile()
 	{
 		$builder = $this->getContainerBuilder();
 
-		$builder->getDefinition('nette.latteFactory')
+		$builder->getDefinition('latte.latteFactory')
 			->addSetup(Harmim\Images\Template\Macros::class .'::install(?->getCompiler())', ['@self']);
 	}
 
 
+	/**
+	 * @return array
+	 */
 	public function getSettings()
 	{
 		$config = $this->validateConfig($this->defaults, $this->config);

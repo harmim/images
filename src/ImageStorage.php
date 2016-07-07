@@ -81,59 +81,38 @@ class ImageStorage extends Nette\Object
 		}
 
 		try {
-			$imagick = new Imagick();
+			$type = NULL;
+			$image = Nette\Utils\Image::fromFile($srcPath);
 
 			Nette\Utils\FileSystem::createDir(dirname($destPath));
 
-			$imagick->readImage($srcPath);
-			$mimetype = $imagick->getImageMimeType();
-
-			if ($imagick->getImageWidth() > $options['width'] || $imagick->getImageHeight() > $options['height']) {
-				$imagick->resizeImage($options['width'], $options['height'], Imagick::FILTER_BESSEL, 0.7, TRUE);
+			if ($image->getWidth() > $options['width'] || $image->getHeight() > $options['height']) {
+				$image->resize($options['width'], $options['height'], Nette\Utils\Image::FIT);
 			}
 
 			if ($options['square']) {
-				$squareColor = 'gray97';
-				if ($mimetype === image_type_to_mime_type(IMAGETYPE_PNG) && $imagick->getImageAlphaChannel() === Imagick::ALPHACHANNEL_TRANSPARENT) {
-					$squareColor = 'transparent';
-				}
-
-				$blank = new Imagick();
 				$squareWidth = $options['width'];
 				$squareHeight = $options['height'];
-				if ($imagick->getImageWidth() < $squareWidth && $imagick->getImageHeight() < $squareHeight) {
-					$squareWidth = $imagick->getImageWidth();
-					$squareHeight = $imagick->getImageHeight();
+				$color = Nette\Utils\Image::rgb(255, 255, 255);
+				if ($this->isTransparentPng($srcPath)) {
+					$color = Nette\Utils\Image::rgb(255, 255, 255, 127);
 				}
 
-				if ($imagick->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
-					$imagick->negateImage(FALSE);
+				if ($image->getWidth() < $squareWidth || $image->getHeight() < $squareHeight) {
+					$squareWidth = $image->getWidth();
+					$squareHeight = $image->getHeight();
 				}
 
-				$blank->newImage($squareWidth, $squareHeight, $squareColor);
-				$blank->setImageFormat('png');
-				$blank->compositeImage($imagick, Imagick::COMPOSITE_OVER, $squareWidth / 2 - $imagick->getImageWidth() / 2, $squareHeight / 2 - $imagick->getImageHeight() / 2);
-				$imagick = $blank;
+				$blank = Nette\Utils\Image::fromBlank($squareWidth, $squareHeight, $color);
+				$blank->place($image, $squareWidth / 2 - $image->getWidth() / 2, $squareHeight / 2 - $image->getHeight() / 2);
+				$image = $blank;
+				$type = 'png';
 			}
 
-			if ($options['compression']) {
-				switch ($mimetype) {
-					case image_type_to_mime_type(IMAGETYPE_JPEG):
-						$imagick->setImageCompression(Imagick::COMPRESSION_JPEG);
-						$imagick->setImageCompressionQuality($options['compression']);
-						break;
+			$image->save($destPath, $options['compression'] ?: NULL, $type);
 
-					case image_type_to_mime_type(IMAGETYPE_PNG):
-					case image_type_to_mime_type(IMAGETYPE_GIF):
-						$imagick->setCompressionQuality($options['compression']);
-						break;
-				}
-			}
-
-			$imagick->writeImage($destPath);
-
-			return [$imagick->getImageWidth(), $imagick->getImageHeight()];
-		} catch (\ImagickException $e) {
+			return [$image->getWidth(), $image->getHeight()];
+		} catch (Nette\Utils\ImageException $e) {
 			trigger_error($e, E_USER_WARNING);
 			return [];
 		}
@@ -141,6 +120,35 @@ class ImageStorage extends Nette\Object
 
 
 	/**
+	 * @param string $path
+	 * @return bool
+	 */
+	protected function isTransparentPng($path)
+	{
+		$type = finfo_file(finfo_open(FILEINFO_MIME_TYPE), $path);
+		if ($type !== image_type_to_mime_type(IMAGETYPE_PNG)) {
+			return FALSE;
+		}
+
+		$image = imagecreatefrompng($path);
+		$w = imagesx($image);
+		$h = imagesy($image);
+
+		for ($x = 0; $x < $w; $x++) {
+			for ($y = 0; $y < $h; $y++) {
+				$rgba = imagecolorat($image, $x, $y);
+				if (($rgba & 0x7F000000) >> 24) {
+					return TRUE;
+				}
+			}
+		}
+
+		return FALSE;
+	}
+
+
+	/**
+	 * @param array $options
 	 * @return Image|NULL
 	 */
 	protected function getPlaceholderImage(array $options)
@@ -219,6 +227,7 @@ class ImageStorage extends Nette\Object
 
 
 	/**
+	 * @param string $fileName
 	 * @return string
 	 */
 	protected function getSubDir($fileName)
@@ -254,6 +263,8 @@ class ImageStorage extends Nette\Object
 			$file->move($origPath);
 			if ($this->createImage($origPath, $this->getCompressionPath($fileName))) {
 				return basename($origPath);
+			} else {
+				Nette\Utils\FileSystem::delete($origPath);
 			}
 		}
 
@@ -268,7 +279,7 @@ class ImageStorage extends Nette\Object
 	protected function getFileNameForSave($fileName)
 	{
 		$name = Nette\Utils\Random::generate(10);
-		$name = $name . substr(md5($name), -6) . '.' . pathinfo($fileName, PATHINFO_EXTENSION);
+		$name = $name . substr(md5($name), -5) . substr(str_shuffle(md5($fileName)), -5) . '.' . pathinfo($fileName, PATHINFO_EXTENSION);
 
 		return $name;
 	}
