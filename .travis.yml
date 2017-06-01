@@ -1,13 +1,12 @@
 language: php
 
 php:
-    - 5.6
-    - 7
-    - hhvm
+    - 7.0
+    - 7.1
 
 matrix:
     allow_failures:
-        - php: hhvm
+        - php: 7.0
 
 before_install:
     - composer self-update
@@ -15,7 +14,8 @@ before_install:
 install:
     - composer install --no-interaction --prefer-source
 
-script: ./vendor/bin/tester ./tests/HarmimTests/
+script:
+    - ./vendor/bin/tester ./tests/
 
 after_failure:
     - for i in $(find ./tests -name \*.actual); do echo "--- $i"; cat $i; echo; echo; done

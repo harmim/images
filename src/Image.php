@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
  * @copyright Copyright (c) 2016 Dominik Harmim
@@ -15,16 +17,25 @@ use Nette;
  * @property int $width
  * @property int $height
  */
-class Image extends Nette\Object
+class Image
 {
 
-	/** @var string */
+	use Nette\SmartObject;
+
+
+	/**
+	 * @var string
+	 */
 	private $src;
 
-	/** @var int */
+	/**
+	 * @var int
+	 */
 	private $width;
 
-	/** @var int */
+	/**
+	 * @var int
+	 */
 	private $height;
 
 
@@ -39,7 +50,7 @@ class Image extends Nette\Object
 	/**
 	 * @return string
 	 */
-	public function getSrc()
+	public function getSrc(): string
 	{
 		return $this->src;
 	}
@@ -48,7 +59,7 @@ class Image extends Nette\Object
 	/**
 	 * @param string $src
 	 */
-	public function setSrc($src)
+	public function setSrc(string $src)
 	{
 		$this->src = $src;
 	}
@@ -57,7 +68,7 @@ class Image extends Nette\Object
 	/**
 	 * @return int
 	 */
-	public function getWidth()
+	public function getWidth(): int
 	{
 		return $this->width;
 	}
@@ -66,7 +77,7 @@ class Image extends Nette\Object
 	/**
 	 * @param int $width
 	 */
-	public function setWidth($width)
+	public function setWidth(int $width)
 	{
 		$this->width = $width;
 	}
@@ -75,7 +86,7 @@ class Image extends Nette\Object
 	/**
 	 * @return int
 	 */
-	public function getHeight()
+	public function getHeight(): int
 	{
 		return $this->height;
 	}
@@ -84,9 +95,15 @@ class Image extends Nette\Object
 	/**
 	 * @param int $height
 	 */
-	public function setHeight($height)
+	public function setHeight(int $height)
 	{
 		$this->height = $height;
+	}
+
+
+	public function __toString()
+	{
+		return $this->getSrc();
 	}
 
 }
