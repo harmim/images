@@ -125,22 +125,42 @@ class ImageStorage
 
 			Nette\Utils\FileSystem::createDir(dirname($destPath));
 
-			$resizeFlags = Nette\Utils\Image::FIT;
-			if ($options["transform"]) {
-				if (strpos($options["transform"], "|") !== FALSE) {
-					$resizeFlags = 0;
-
-					foreach (explode("|", $options["transform"]) as $flag) {
-						if (isset(static::RESIZE_FLAGS[$flag])) {
-							$resizeFlags |= static::RESIZE_FLAGS[$flag];
-						}
-					}
-
-				} elseif (isset(static::RESIZE_FLAGS[$options["transform"]])) {
-					$resizeFlags = static::RESIZE_FLAGS[$options["transform"]];
+			if ($options["transform"] === "fill_exact") {
+				$color = Nette\Utils\Image::rgb(255, 255, 255);
+				if ($this->isTransparentPng($srcPath)) {
+					$color = Nette\Utils\Image::rgb(255, 255, 255, 127);
 				}
+
+				$blank = Nette\Utils\Image::fromBlank($options["width"], $options["height"], $color);
+				$image->resize($options["width"], NULL);
+				$image->resize(NULL, $options["height"]);
+				$blank->place(
+					$image,
+					$options["width"] / 2 - $image->getWidth() / 2,
+					$options["height"] / 2 - $image->getHeight() / 2
+				);
+				$image = $blank;
+				$type = Nette\Utils\Image::PNG;
+
+			} else {
+				$resizeFlags = Nette\Utils\Image::FIT;
+				if ($options["transform"]) {
+					if (strpos($options["transform"], "|") !== FALSE) {
+						$resizeFlags = 0;
+
+						foreach (explode("|", $options["transform"]) as $flag) {
+							if (isset(static::RESIZE_FLAGS[$flag])) {
+								$resizeFlags |= static::RESIZE_FLAGS[$flag];
+							}
+						}
+
+					} elseif (isset(static::RESIZE_FLAGS[$options["transform"]])) {
+						$resizeFlags = static::RESIZE_FLAGS[$options["transform"]];
+					}
+				}
+
+				$image->resize($options["width"], $options["height"], $resizeFlags);
 			}
-			$image->resize($options["width"], $options["height"], $resizeFlags);
 
 			if ($options["square"]) {
 				$squareWidth = $options["width"];

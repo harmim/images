@@ -84,7 +84,7 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		return sprintf(
 			'[%s \'storage\' => $imageStorage %s]',
-			$type ? "'type' => $type, " : "",
+			$type ? "'type' => '$type', " : "",
 			$node->args ? ", {$writer->formatArgs()}" : ""
 		);
 	}
@@ -97,7 +97,7 @@ class Macros extends Latte\Macros\MacroSet
 	private function getImageFromNode(Latte\MacroNode $node): array
 	{
 		$img = $node->tokenizer->fetchWord();
-		$type = NULL;
+		$type = "";
 
 		if ($node->tokenizer->isNext()) {
 			$type = $node->tokenizer->fetchWord();
@@ -105,7 +105,7 @@ class Macros extends Latte\Macros\MacroSet
 			if ($node->tokenizer->isNext() && $node->tokenizer->isNext("=>")) {
 				$node->tokenizer->reset();
 				$img = $node->tokenizer->fetchWord();
-				$type = NULL;
+				$type = "";
 			}
 		}
 
@@ -124,8 +124,10 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		if ($image = static::getImage($img, $args)) {
 			$args = array_filter($args, function($key) {
-				return $key === "width" || $key === "height" || ! isset(Harmim\Images\DI\ImagesExtension::DEFAULTS[$key]);
+				return in_array($key, Harmim\Images\DI\ImagesExtension::DEFAULTS["imgTagAttributes"]);
 			}, ARRAY_FILTER_USE_KEY);
+
+			$args["src"] = (string) $image;
 
 			return (string) Nette\Utils\Html::el("img", $args);
 		}
@@ -152,10 +154,10 @@ class Macros extends Latte\Macros\MacroSet
 	/**
 	 * @param string|Harmim\Images\IItem $img
 	 * @param array $args
-	 * @return Harmim\Images\Image
+	 * @return Harmim\Images\Image|NULL
 	 * @throws Nette\InvalidStateException
 	 */
-	public static function getImage($img, array $args): Harmim\Images\Image
+	public static function getImage($img, array $args)
 	{
 		if (empty($args["storage"]) || ! $args["storage"] instanceof Harmim\Images\ImageStorage) {
 			throw new Nette\InvalidStateException(sprintf(

@@ -25,8 +25,8 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 		"width" => 1024,
 		"height" => 1024,
 		"compression" => 85,
-		"transform" => Nette\Utils\Image::FIT,
-		"square" => FALSE,
+		"transform" => "fit",
+		"imgTagAttributes" => ["alt", "height", "width", "class", "hidden", "id", "style", "title"],
 		"types" => [],
 	];
 
