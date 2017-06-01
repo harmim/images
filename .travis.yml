@@ -1,0 +1,21 @@
+language: php
+
+php:
+    - 7.0
+    - 7.1
+
+matrix:
+    allow_failures:
+        - php: 7.0
+
+before_install:
+    - composer self-update
+
+install:
+    - composer install --no-interaction --prefer-source
+
+script:
+    - ./vendor/bin/tester ./tests/
+
+after_failure:
+    - for i in $(find ./tests -name \*.actual); do echo "--- $i"; cat $i; echo; echo; done

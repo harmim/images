@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
  * @copyright Copyright (c) 2016 Dominik Harmim
@@ -14,44 +16,53 @@ use Nette;
 class ImagesExtension extends Nette\DI\CompilerExtension
 {
 
-	/** @var array */
-	private $defaults = [
-		'wwwDir' => '%wwwDir%',
-		'imagesDir' => 'data/images',
-		'origDir' => '_orig',
-		'compressionDir' => '_imgs',
-		'placeholder' => 'img/noimg.jpg',
-		'width' => 1024,
-		'height' => 1024,
-		'compression' => 85,
-		'types' => [],
-		'square' => FALSE,
+	const DEFAULTS = [
+		"wwwDir" => "%wwwDir%",
+		"imagesDir" => "data/images",
+		"origDir" => "orig",
+		"compressionDir" => "imgs",
+		"placeholder" => "img/noimg.jpg",
+		"width" => 1024,
+		"height" => 1024,
+		"compression" => 85,
+		"transform" => Nette\Utils\Image::FIT,
+		"square" => FALSE,
+		"types" => [],
 	];
 
 
+	/**
+	 * @inheritdoc
+	 */
 	public function loadConfiguration()
 	{
 		$builder = $this->getContainerBuilder();
 
-		$builder->addDefinition($this->prefix('storage'))
+		$builder->addDefinition($this->prefix("images"))
 			->setClass(Harmim\Images\ImageStorage::class)
 			->setArguments([$this->getSettings()]);
 	}
 
 
+	/**
+	 * @inheritdoc
+	 */
 	public function beforeCompile()
 	{
 		$builder = $this->getContainerBuilder();
 
-		$builder->getDefinition('nette.latteFactory')
-			->addSetup(Harmim\Images\Template\Macros::class .'::install(?->getCompiler())', ['@self']);
+		$builder->getDefinition("latte.latteFactory")
+			->addSetup(Harmim\Images\Template\Macros::class ."::install(?->getCompiler())", ["@self"]);
 	}
 
 
-	public function getSettings()
+	/**
+	 * @return array
+	 */
+	public function getSettings(): array
 	{
-		$config = $this->validateConfig($this->defaults, $this->config);
-		$config['wwwDir'] = Nette\DI\Helpers::expand($config['wwwDir'], $this->getContainerBuilder()->parameters);
+		$config = $this->validateConfig(self::DEFAULTS, $this->config);
+		$config["wwwDir"] = Nette\DI\Helpers::expand($config["wwwDir"], $this->getContainerBuilder()->parameters);
 
 		return $config;
 	}
