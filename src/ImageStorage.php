@@ -72,11 +72,12 @@ class ImageStorage
 
 
 	/**
+	 * @internal
 	 * @param string|IItem $fileName
 	 * @param array $args
 	 * @return Image|NULL
 	 */
-	public function getImage($fileName, array $args = [])
+	public function getImage($fileName, array $args = []): ?Image
 	{
 		if ($fileName instanceof IItem) {
 			$fileName = $fileName->getFileName();
@@ -186,7 +187,7 @@ class ImageStorage
 			return [$image->getWidth(), $image->getHeight()];
 
 		} catch (\Throwable $e) {
-			trigger_error($e, E_USER_ERROR);
+			trigger_error($e->getMessage(), E_USER_ERROR);
 
 			return [];
 		}
@@ -225,7 +226,7 @@ class ImageStorage
 	 * @param array $options
 	 * @return Image|NULL
 	 */
-	protected function getPlaceholderImage(array $options)
+	protected function getPlaceholderImage(array $options): ?Image
 	{
 		if (is_readable($this->placeholder)) {
 			return new Image($this->createRelativeWWWPath($this->placeholder), $options["width"], $options["height"]);
@@ -387,6 +388,24 @@ class ImageStorage
 		}
 
 		return TRUE;
+	}
+
+
+	/**
+	 * @param IItem|string $fileName
+	 * @param string|NULL $type
+	 * @param array $options
+	 * @return null|string
+	 */
+	public function getImageLink($fileName, string $type = NULL, array $options = []): ?string
+	{
+		if ($type !== NULL) {
+			$options["type"] = $type;
+		}
+
+		$image = $this->getImage($fileName, $options);
+
+		return $image ? (string) $image : NULL;
 	}
 
 }

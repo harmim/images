@@ -118,9 +118,9 @@ class Macros extends Latte\Macros\MacroSet
 	 *
 	 * @param string|Harmim\Images\IItem $img
 	 * @param array $args
-	 * @return string
+	 * @return string|NULL
 	 */
-	public static function img($img, array $args): string
+	public static function img($img, array $args): ?string
 	{
 		if ($image = static::getImage($img, $args)) {
 			$args = array_filter($args, function($key) {
@@ -132,22 +132,22 @@ class Macros extends Latte\Macros\MacroSet
 			return (string) Nette\Utils\Html::el("img", $args);
 		}
 
-		return "";
+		return NULL;
 	}
 
 
 	/**
 	 * @param string|Harmim\Images\IItem $img
 	 * @param array $args
-	 * @return string
+	 * @return string|NULL
 	 */
-	public static function imgLink($img, array $args): string
+	public static function imgLink($img, array $args): ?string
 	{
 		if ($image = static::getImage($img, $args)) {
 			return (string) $image;
 		}
 
-		return "";
+		return NULL;
 	}
 
 
@@ -157,11 +157,12 @@ class Macros extends Latte\Macros\MacroSet
 	 * @return Harmim\Images\Image|NULL
 	 * @throws Nette\InvalidStateException
 	 */
-	public static function getImage($img, array $args)
+	public static function getImage($img, array $args): ?Harmim\Images\Image
 	{
 		if (empty($args["storage"]) || ! $args["storage"] instanceof Harmim\Images\ImageStorage) {
 			throw new Nette\InvalidStateException(sprintf(
-				'The template was not forwarded instance of %s to macro img/imgLink, it should have in variable $imageStorage.',
+				'The template was not forwarded instance of %s to macro img/imgLink, 
+				it should have in variable $imageStorage.',
 				Harmim\Images\ImageStorage::class
 			));
 		}

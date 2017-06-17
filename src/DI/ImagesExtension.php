@@ -16,7 +16,7 @@ use Nette;
 class ImagesExtension extends Nette\DI\CompilerExtension
 {
 
-	const DEFAULTS = [
+	public const DEFAULTS = [
 		"wwwDir" => "%wwwDir%",
 		"imagesDir" => "data/images",
 		"origDir" => "orig",
