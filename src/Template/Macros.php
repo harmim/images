@@ -24,7 +24,7 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		$self = new static($compiler);
 
-		$self->addMacro('img', [$self, 'macroImg'], NULL, [$self, 'attrMacroImg']);
+		$self->addMacro('img', [$self, 'macroImg'], null, [$self, 'attrMacroImg']);
 		$self->addMacro('imgLink', [$self, 'macroImgLink']);
 	}
 
@@ -38,7 +38,7 @@ class Macros extends Latte\Macros\MacroSet
 	 */
 	public function macroImg(Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
-		list($img, $type) = $this->getImageFromNode($node);
+		[$img, $type] = $this->getImageFromNode($node);
 
 		return  sprintf('echo %s::img("%s", %s)', get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
 	}
@@ -53,7 +53,7 @@ class Macros extends Latte\Macros\MacroSet
 	 */
 	public function attrMacroImg(Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
-		list($img, $type) = $this->getImageFromNode($node);
+		[$img, $type] = $this->getImageFromNode($node);
 
 		return sprintf('echo \' src="\' . %s::imgLink("%s", %s) . \'"\'', get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
 	}
@@ -68,7 +68,7 @@ class Macros extends Latte\Macros\MacroSet
 	 */
 	public function macroImgLink(Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
-		list($img, $type) = $this->getImageFromNode($node);
+		[$img, $type] = $this->getImageFromNode($node);
 
 		return sprintf('echo %s::imgLink("%s", %s)', get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
 	}
@@ -123,8 +123,8 @@ class Macros extends Latte\Macros\MacroSet
 	public static function img($img, array $args): ?string
 	{
 		if ($image = static::getImage($img, $args)) {
-			$args = array_filter($args, function($key) {
-				return in_array($key, Harmim\Images\DI\ImagesExtension::DEFAULTS['imgTagAttributes']);
+			$args = array_filter($args, function ($key) {
+				return in_array($key, Harmim\Images\DI\ImagesExtension::DEFAULTS['imgTagAttributes'], true);
 			}, ARRAY_FILTER_USE_KEY);
 
 			$args['src'] = (string) $image;
@@ -132,7 +132,7 @@ class Macros extends Latte\Macros\MacroSet
 			return (string) Nette\Utils\Html::el('img', $args);
 		}
 
-		return NULL;
+		return null;
 	}
 
 
@@ -147,7 +147,7 @@ class Macros extends Latte\Macros\MacroSet
 			return (string) $image;
 		}
 
-		return NULL;
+		return null;
 	}
 
 
@@ -159,7 +159,7 @@ class Macros extends Latte\Macros\MacroSet
 	 */
 	public static function getImage($img, array &$args): ?Harmim\Images\Image
 	{
-		if (empty($args['storage']) || ! $args['storage'] instanceof Harmim\Images\ImageStorage) {
+		if (empty($args['storage']) || !$args['storage'] instanceof Harmim\Images\ImageStorage) {
 			throw new Nette\InvalidStateException(sprintf(
 				'The template was not forwarded instance of %s to macro img/imgLink,
 				it should have in variable $imageStorage.',
@@ -177,5 +177,4 @@ class Macros extends Latte\Macros\MacroSet
 
 		return $image;
 	}
-
 }

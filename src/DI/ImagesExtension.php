@@ -15,7 +15,6 @@ use Nette;
 
 class ImagesExtension extends Nette\DI\CompilerExtension
 {
-
 	public const DEFAULTS = [
 		'wwwDir' => '%wwwDir%',
 		'imagesDir' => 'data/images',
@@ -28,7 +27,7 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 		'transform' => 'fit',
 		'imgTagAttributes' => ['alt', 'height', 'width', 'class', 'hidden', 'id', 'style', 'title'],
 		'types' => [],
-		'square' => FALSE,
+		'square' => false,
 	];
 
 
@@ -53,7 +52,7 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 		$builder = $this->getContainerBuilder();
 
 		$builder->getDefinition('latte.latteFactory')
-			->addSetup(Harmim\Images\Template\Macros::class .'::install(?->getCompiler())', ['@self']);
+			->addSetup(Harmim\Images\Template\Macros::class . '::install(?->getCompiler())', ['@self']);
 	}
 
 
@@ -67,5 +66,4 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 
 		return $config;
 	}
-
 }

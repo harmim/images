@@ -14,7 +14,6 @@ use Nette;
 
 class ImageStorage
 {
-
 	use Nette\SmartObject;
 
 
@@ -86,18 +85,18 @@ class ImageStorage
 		$options = $this->getOptions($args);
 		$srcPath = $this->getCompressionPath($fileName);
 
-		if ( ! $fileName || ! is_readable($srcPath)) {
+		if (!$fileName || !is_readable($srcPath)) {
 			return $this->getPlaceholderImage($options);
 		}
 
 		$destPath = $this->getDestPath($fileName, $options);
 
 		if (is_readable($destPath)) {
-			list($width, $height) = getimagesize($destPath);
+			[$width, $height] = getimagesize($destPath);
 
 		} else {
 			if ($image = $this->createImage($srcPath, $destPath, $options)) {
-				list($width, $height) = $image;
+				[$width, $height] = $image;
 
 			} else {
 				return $this->getPlaceholderImage($options);
@@ -116,12 +115,12 @@ class ImageStorage
 	 */
 	protected function createImage(string $srcPath, string $destPath, array $options = []): array
 	{
-		if ( ! $options) {
+		if (!$options) {
 			$options = $this->config;
 		}
 
 		try {
-			$type = NULL;
+			$type = null;
 			$image = Nette\Utils\Image::fromFile($srcPath);
 
 			Nette\Utils\FileSystem::createDir(dirname($destPath));
@@ -133,8 +132,8 @@ class ImageStorage
 				}
 
 				$blank = Nette\Utils\Image::fromBlank($options['width'], $options['height'], $color);
-				$image->resize($options['width'], NULL);
-				$image->resize(NULL, $options['height']);
+				$image->resize($options['width'], null);
+				$image->resize(null, $options['height']);
 				$blank->place(
 					$image,
 					$options['width'] / 2 - $image->getWidth() / 2,
@@ -146,7 +145,7 @@ class ImageStorage
 			} else {
 				$resizeFlags = Nette\Utils\Image::FIT;
 				if ($options['transform']) {
-					if (strpos($options['transform'], '|') !== FALSE) {
+					if (strpos($options['transform'], '|') !== false) {
 						$resizeFlags = 0;
 
 						foreach (explode('|', $options['transform']) as $flag) {
@@ -182,7 +181,7 @@ class ImageStorage
 				$type = Nette\Utils\Image::PNG;
 			}
 
-			$image->sharpen()->save($destPath, $options['compression'] ?: NULL, $type);
+			$image->sharpen()->save($destPath, $options['compression'] ?: null, $type);
 
 			return [$image->getWidth(), $image->getHeight()];
 
@@ -202,7 +201,7 @@ class ImageStorage
 	{
 		$type = finfo_file(finfo_open(FILEINFO_MIME_TYPE), $path);
 		if ($type !== image_type_to_mime_type(IMAGETYPE_PNG)) {
-			return FALSE;
+			return false;
 		}
 
 		$image = imagecreatefrompng($path);
@@ -213,12 +212,12 @@ class ImageStorage
 			for ($j = 0; $j < $height; $j++) {
 				$rgba = imagecolorat($image, $i, $j);
 				if (($rgba & 0x7F000000) >> 24) {
-					return TRUE;
+					return true;
 				}
 			}
 		}
 
-		return FALSE;
+		return false;
 	}
 
 
@@ -232,7 +231,7 @@ class ImageStorage
 			return new Image($this->createRelativeWWWPath($this->placeholder), $options['width'], $options['height']);
 		}
 
-		return NULL;
+		return null;
 	}
 
 
@@ -273,14 +272,14 @@ class ImageStorage
 	 */
 	protected function getDestPath(string $fileName, array $options = []): string
 	{
-		if ( ! $options) {
+		if (!$options) {
 			$options = $this->config;
 		}
 
-		if ( ! empty($options['destDir'])) {
+		if (!empty($options['destDir'])) {
 			$destDir = $options['destDir'];
 
-		} elseif ( ! empty($options['type']) && array_key_exists($options['type'], $this->types)) {
+		} elseif (!empty($options['type']) && array_key_exists($options['type'], $this->types)) {
 			$destDir = $options['type'];
 
 		} else {
@@ -312,7 +311,7 @@ class ImageStorage
 	{
 		$type = [];
 
-		if ( ! empty($args['type']) && array_key_exists($args['type'], $this->types)) {
+		if (!empty($args['type']) && array_key_exists($args['type'], $this->types)) {
 			$type = $this->types[$args['type']];
 		}
 
@@ -364,13 +363,13 @@ class ImageStorage
 	 */
 	public function deleteImage(string $fileName, array $excludedTypes = []): bool
 	{
-		if ( ! $excludedTypes) {
+		if (!$excludedTypes) {
 			Nette\Utils\FileSystem::delete($this->getOrigPath($fileName));
 			Nette\Utils\FileSystem::delete($this->getCompressionPath($fileName));
 		}
 
 		foreach ($this->types as $key => $value) {
-			if ( ! $excludedTypes || ! in_array($key, $excludedTypes)) {
+			if (!$excludedTypes || !in_array($key, $excludedTypes, true)) {
 				Nette\Utils\FileSystem::delete($this->getDestPath($fileName, ['type' => $key]));
 			}
 		}
@@ -389,7 +388,7 @@ class ImageStorage
 			}
 		}
 
-		return TRUE;
+		return true;
 	}
 
 
@@ -399,15 +398,14 @@ class ImageStorage
 	 * @param array $options
 	 * @return null|string
 	 */
-	public function getImageLink($fileName, string $type = NULL, array $options = []): ?string
+	public function getImageLink($fileName, string $type = null, array $options = []): ?string
 	{
-		if ($type !== NULL) {
+		if ($type !== null) {
 			$options['type'] = $type;
 		}
 
 		$image = $this->getImage($fileName, $options);
 
-		return $image ? (string) $image : NULL;
+		return $image ? (string) $image : null;
 	}
-
 }

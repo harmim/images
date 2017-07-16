@@ -19,7 +19,6 @@ use Nette;
  */
 class Image
 {
-
 	use Nette\SmartObject;
 
 
@@ -105,5 +104,4 @@ class Image
 	{
 		return $this->getSrc();
 	}
-
 }

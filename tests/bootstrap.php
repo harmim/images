@@ -43,7 +43,7 @@ function test(\Closure $function): void
 define('IMAGES_EXTENSION_CONFIG', [
 	'wwwDir' => __TEMP_DIR__,
 	'placeholder' => 'noimg.png',
-	'types' =>[
+	'types' => [
 		'img-small' => [
 			'width' => 1000,
 			'height' => 1000,

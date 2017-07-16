@@ -12,10 +12,8 @@ namespace Harmim\Images;
 
 interface IItem
 {
-
 	/**
 	 * @return string
 	 */
 	function getFileName(): string;
-
 }

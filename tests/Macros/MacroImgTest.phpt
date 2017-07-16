@@ -25,7 +25,6 @@ require __DIR__ . '/../bootstrap.php';
 
 class MacroImgTest extends Tester\TestCase
 {
-
 	/**
 	 * @var Latte\Engine
 	 */
@@ -146,7 +145,6 @@ class MacroImgTest extends Tester\TestCase
 			]
 		);
 	}
-
 }
 
 

@@ -17,7 +17,6 @@ use Harmim;
  */
 trait TImageStorage
 {
-
 	/**
 	 * @var Harmim\Images\ImageStorage
 	 */
@@ -37,5 +36,4 @@ trait TImageStorage
 
 		return $template;
 	}
-
 }
