@@ -40,7 +40,7 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		[$img, $type] = $this->getImageFromNode($node);
 
-		return  sprintf('echo %s::img("' . $img . '", %s)', get_class($this), $this->formatMacroArgs($type, $node, $writer));
+		return  sprintf('echo %s::img(%s, %s)', get_class($this), $writer->formatWord($img), $this->formatMacroArgs($type, $node, $writer));
 	}
 
 
@@ -55,7 +55,7 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		[$img, $type] = $this->getImageFromNode($node);
 
-		return sprintf('echo \' src="\' . %s::imgLink("' . $img . '", %s) . \'"\'', get_class($this), $this->formatMacroArgs($type, $node, $writer));
+		return sprintf('echo \' src="\' . %s::imgLink(%s, %s) . \'"\'', get_class($this), $writer->formatWord($img), $this->formatMacroArgs($type, $node, $writer));
 	}
 
 
@@ -70,7 +70,7 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		[$img, $type] = $this->getImageFromNode($node);
 
-		return sprintf('echo %s::imgLink("' . $img . '", %s)', get_class($this), $this->formatMacroArgs($type, $node, $writer));
+		return sprintf('echo %s::imgLink(%s, %s)', get_class($this), $writer->formatWord($img), $this->formatMacroArgs($type, $node, $writer));
 	}
 
 
