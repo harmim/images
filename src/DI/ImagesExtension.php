@@ -17,18 +17,18 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 {
 
 	public const DEFAULTS = [
-		"wwwDir" => "%wwwDir%",
-		"imagesDir" => "data/images",
-		"origDir" => "orig",
-		"compressionDir" => "imgs",
-		"placeholder" => "img/noimg.jpg",
-		"width" => 1024,
-		"height" => 1024,
-		"compression" => 85,
-		"transform" => "fit",
-		"imgTagAttributes" => ["alt", "height", "width", "class", "hidden", "id", "style", "title"],
-		"types" => [],
-		"square" => FALSE,
+		'wwwDir' => '%wwwDir%',
+		'imagesDir' => 'data/images',
+		'origDir' => 'orig',
+		'compressionDir' => 'imgs',
+		'placeholder' => 'img/noimg.jpg',
+		'width' => 1024,
+		'height' => 1024,
+		'compression' => 85,
+		'transform' => 'fit',
+		'imgTagAttributes' => ['alt', 'height', 'width', 'class', 'hidden', 'id', 'style', 'title'],
+		'types' => [],
+		'square' => FALSE,
 	];
 
 
@@ -39,7 +39,7 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 	{
 		$builder = $this->getContainerBuilder();
 
-		$builder->addDefinition($this->prefix("images"))
+		$builder->addDefinition($this->prefix('images'))
 			->setClass(Harmim\Images\ImageStorage::class)
 			->setArguments([$this->getSettings()]);
 	}
@@ -52,8 +52,8 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 	{
 		$builder = $this->getContainerBuilder();
 
-		$builder->getDefinition("latte.latteFactory")
-			->addSetup(Harmim\Images\Template\Macros::class ."::install(?->getCompiler())", ["@self"]);
+		$builder->getDefinition('latte.latteFactory')
+			->addSetup(Harmim\Images\Template\Macros::class .'::install(?->getCompiler())', ['@self']);
 	}
 
 
@@ -63,7 +63,7 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 	public function getSettings(): array
 	{
 		$config = $this->validateConfig(self::DEFAULTS, $this->config);
-		$config["wwwDir"] = Nette\DI\Helpers::expand($config["wwwDir"], $this->getContainerBuilder()->parameters);
+		$config['wwwDir'] = Nette\DI\Helpers::expand($config['wwwDir'], $this->getContainerBuilder()->parameters);
 
 		return $config;
 	}

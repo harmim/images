@@ -24,13 +24,13 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		$self = new static($compiler);
 
-		$self->addMacro("img", [$self, "macroImg"], NULL, [$self, "attrMacroImg"]);
-		$self->addMacro("imgLink", [$self, "macroImgLink"]);
+		$self->addMacro('img', [$self, 'macroImg'], NULL, [$self, 'attrMacroImg']);
+		$self->addMacro('imgLink', [$self, 'macroImgLink']);
 	}
 
 
 	/**
-	 * {img $img [type] alt => "..."[, width, height, transform, title, class, compression, ...]}
+	 * {img $img [type] alt => '...'[, width, height, transform, title, class, compression, ...]}
 	 *
 	 * @param Latte\MacroNode $node
 	 * @param Latte\PhpWriter $writer
@@ -40,12 +40,12 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		list($img, $type) = $this->getImageFromNode($node);
 
-		return  sprintf("echo %s::img(%s, %s)", get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
+		return  sprintf('echo %s::img("%s", %s)', get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
 	}
 
 
 	/**
-	 * n:img="$img [type] [, width, height, transform, compression, ...]"
+	 * n:img='$img [type] [, width, height, transform, compression, ...]'
 	 *
 	 * @param Latte\MacroNode $node
 	 * @param Latte\PhpWriter $writer
@@ -55,7 +55,7 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		list($img, $type) = $this->getImageFromNode($node);
 
-		return sprintf("echo 'src=\"' . %s::imgLink(%s, %s) . '\"'", get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
+		return sprintf('echo \' src="\' . %s::imgLink("%s", %s) . \'"\'', get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
 	}
 
 
@@ -70,7 +70,7 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		list($img, $type) = $this->getImageFromNode($node);
 
-		return sprintf("echo %s::imgLink(%s, %s)", get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
+		return sprintf('echo %s::imgLink("%s", %s)', get_class($this), $img, $this->formatMacroArgs($type, $node, $writer));
 	}
 
 
@@ -83,9 +83,9 @@ class Macros extends Latte\Macros\MacroSet
 	private function formatMacroArgs(string $type, Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
 		return sprintf(
-			'[%s \'storage\' => $imageStorage %s]',
-			$type ? "'type' => '$type', " : "",
-			$node->args ? ", {$writer->formatArgs()}" : ""
+			'[%s\'storage\' => $imageStorage%s]',
+			$type ? "'type' => '$type', " : '',
+			$node->args ? ", {$writer->formatArgs()}" : ''
 		);
 	}
 
@@ -97,15 +97,15 @@ class Macros extends Latte\Macros\MacroSet
 	private function getImageFromNode(Latte\MacroNode $node): array
 	{
 		$img = $node->tokenizer->fetchWord();
-		$type = "";
+		$type = '';
 
 		if ($node->tokenizer->isNext()) {
 			$type = $node->tokenizer->fetchWord();
 
-			if ($node->tokenizer->isNext() && $node->tokenizer->isNext("=>")) {
+			if ($node->tokenizer->isNext() && $node->tokenizer->isNext('=>')) {
 				$node->tokenizer->reset();
 				$img = $node->tokenizer->fetchWord();
-				$type = "";
+				$type = '';
 			}
 		}
 
@@ -124,12 +124,12 @@ class Macros extends Latte\Macros\MacroSet
 	{
 		if ($image = static::getImage($img, $args)) {
 			$args = array_filter($args, function($key) {
-				return in_array($key, Harmim\Images\DI\ImagesExtension::DEFAULTS["imgTagAttributes"]);
+				return in_array($key, Harmim\Images\DI\ImagesExtension::DEFAULTS['imgTagAttributes']);
 			}, ARRAY_FILTER_USE_KEY);
 
-			$args["src"] = (string) $image;
+			$args['src'] = (string) $image;
 
-			return (string) Nette\Utils\Html::el("img", $args);
+			return (string) Nette\Utils\Html::el('img', $args);
 		}
 
 		return NULL;
@@ -157,21 +157,25 @@ class Macros extends Latte\Macros\MacroSet
 	 * @return Harmim\Images\Image|NULL
 	 * @throws Nette\InvalidStateException
 	 */
-	public static function getImage($img, array $args): ?Harmim\Images\Image
+	public static function getImage($img, array &$args): ?Harmim\Images\Image
 	{
-		if (empty($args["storage"]) || ! $args["storage"] instanceof Harmim\Images\ImageStorage) {
+		if (empty($args['storage']) || ! $args['storage'] instanceof Harmim\Images\ImageStorage) {
 			throw new Nette\InvalidStateException(sprintf(
-				'The template was not forwarded instance of %s to macro img/imgLink, 
+				'The template was not forwarded instance of %s to macro img/imgLink,
 				it should have in variable $imageStorage.',
 				Harmim\Images\ImageStorage::class
 			));
 		}
 
 		/** @var Harmim\Images\ImageStorage $imageStorage */
-		$imageStorage = $args["storage"];
-		unset($args["storage"]);
+		$imageStorage = $args['storage'];
+		unset($args['storage']);
 
-		return $imageStorage->getImage($img, $args);
+
+		$image = $imageStorage->getImage($img, $args);
+		$args = $imageStorage->getOptions($args);
+
+		return $image;
 	}
 
 }
