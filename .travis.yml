@@ -1,66 +1,73 @@
 language: php
 
+
 php:
     - 7.1
 
-matrix:
-    include:
-        - php: 7.1
 
-        - php: 7.1
-          env: coverage=1
+env:
+    - PHP_BIN=php
+    - PHP_BIN=php-cgi
 
-        - php: 7.1
-          env: codingStandard=1
-
-    allow_failures:
-        - php: 7.1
-          env: coverage=1
 
 before_install:
     # Composer self update
     - travis_retry composer self-update
 
-install:
-    # Install dependencies
 
-    # Nette Tester, Nette Coding Standard
+install:
+    # Composer install
     - travis_retry composer update --no-interaction --prefer-dist --prefer-stable
 
-    # Coding standard
-    - >
-      if [ "$codingStandard" ]; then
-        travis_retry composer create-project nette/code-checker temp/code-checker ^2.10 --no-interaction
-      fi
-
-before_script:
-    # Set Nette Tester coverage args
-    - if [ "$coverage" ]; then coverageArgs="-p phpdbg --coverage ./coverage.xml --coverage-src ./src"; fi
 
 script:
-    # Coding standard or Nette Tester + (coverage)
-    - >
-      if [ "$codingStandard" ]; then
-        php temp/code-checker/src/code-checker.php --short-arrays --strict-types
-        composer cs
-      else
-          vendor/bin/tester tests -s $coverageArgs
-      fi
+    # run Nette Tester
+    - vendor/bin/tester tests -p $PHP_BIN -s
 
-after_script:
-    # Report Code Coverage
-    - >
-      if [ "$coverage" ]; then
-        wget https://github.com/satooshi/php-coveralls/releases/download/v1.0.1/coveralls.phar
-        php coveralls.phar --verbose --config tests/.coveralls.yml
-      fi
 
 after_failure:
-    # Print *.actual content
-    - for i in $(find tests -name \*.actual); do echo "--- $i"; cat $i; echo; echo; done
+    # print *.actual content
+    - for i in $(find tests -name *.actual); do echo "--- $i"; cat $i; echo; echo; done
+
+
+jobs:
+    include:
+        -   stage: Code Coverage
+
+            script:
+                # run Nette Tester for tests coverage
+                - vendor/bin/tester tests -s -p phpdbg --coverage coverage.xml --coverage-src src
+
+            after_script:
+                # Coveralls report
+                - wget https://github.com/satooshi/php-coveralls/releases/download/v1.0.1/coveralls.phar
+                - php coveralls.phar --verbose --config tests/.coveralls.yml
+
+
+        -   stage: Code Standard Checker
+
+            install:
+                # install Nette Code Checker
+                - travis_retry composer create-project nette/code-checker temp/code-checker ^2.11 --no-interaction
+
+            script:
+                # run Nette Code Checker
+                - php temp/code-checker/src/code-checker.php --short-arrays --strict-types
+
+                # run Nette Coding Standard checker
+                - composer cs
+
+    allow_failures:
+        -   stage: Code Coverage
+
 
 sudo: false
+
 
 cache:
     directories:
         - $HOME/.composer/cache
+
+
+notifications:
+    email: false

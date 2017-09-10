@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2016 Dominik Harmim
+ * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images;
@@ -38,7 +38,7 @@ class Image
 	private $height;
 
 
-	public function __construct($src, $width, $height)
+	public function __construct(string $src, int $width, int $height)
 	{
 		$this->src = $src;
 		$this->width = $width;
@@ -46,57 +46,45 @@ class Image
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getSrc(): string
 	{
 		return $this->src;
 	}
 
 
-	/**
-	 * @param string $src
-	 */
-	public function setSrc(string $src)
+	public function setSrc(string $src): Image
 	{
 		$this->src = $src;
+
+		return $this;
 	}
 
 
-	/**
-	 * @return int
-	 */
 	public function getWidth(): int
 	{
 		return $this->width;
 	}
 
 
-	/**
-	 * @param int $width
-	 */
-	public function setWidth(int $width)
+	public function setWidth(int $width): Image
 	{
 		$this->width = $width;
+
+		return $this;
 	}
 
 
-	/**
-	 * @return int
-	 */
 	public function getHeight(): int
 	{
 		return $this->height;
 	}
 
 
-	/**
-	 * @param int $height
-	 */
-	public function setHeight(int $height)
+	public function setHeight(int $height): Image
 	{
 		$this->height = $height;
+
+		return $this;
 	}
 
 

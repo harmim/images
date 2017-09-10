@@ -1,14 +1,16 @@
 {
 	"name": "harmim/images",
-	"description": "Image service for Nette Framework.",
-	"keywords": ["nette", "image"],
+	"description": "A tool for working with images.",
+	"keywords": ["nette", "images", "php", "gd"],
 	"type": "library",
 	"homepage": "https://github.com/harmim/images",
 	"license": "MIT",
 	"authors": [
 		{
 			"name": "Dominik Harmim",
-			"email": "harmim6@gmail.com"
+			"email": "harmim6@gmail.com",
+			"homepage": "http://www.harmim.cz/",
+			"role": "Developer"
 		}
 	],
 	"require": {
@@ -22,8 +24,8 @@
 		"nette/finder": "^2.4"
 	},
 	"require-dev": {
-		"nette/tester": "^1.7",
-		"nette/coding-standard": "^0.2"
+		"nette/tester": "^2.0",
+		"nette/coding-standard": "^0.5"
 	},
 	"autoload": {
 		"psr-4": {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2016 Dominik Harmim
+ * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images\Template;
@@ -16,10 +16,6 @@ use Nette;
 
 class Macros extends Latte\Macros\MacroSet
 {
-
-	/**
-	 * @param Latte\Compiler $compiler
-	 */
 	public static function install(Latte\Compiler $compiler): void
 	{
 		$self = new static($compiler);
@@ -29,57 +25,45 @@ class Macros extends Latte\Macros\MacroSet
 	}
 
 
-	/**
-	 * {img $img [type] alt => '...'[, width, height, transform, title, class, compression, ...]}
-	 *
-	 * @param Latte\MacroNode $node
-	 * @param Latte\PhpWriter $writer
-	 * @return string
-	 */
 	public function macroImg(Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
 		[$img, $type] = $this->getImageFromNode($node);
 
-		return  sprintf('echo %s::img(%s, %s)', get_class($this), $writer->formatWord($img), $this->formatMacroArgs($type, $node, $writer));
+		return sprintf(
+			'echo %s::img(%s, %s);',
+			get_class($this),
+			$writer->formatWord($img),
+			$this->formatMacroArgs($type, $node, $writer)
+		);
 	}
 
 
-	/**
-	 * n:img='$img [type] [, width, height, transform, compression, ...]'
-	 *
-	 * @param Latte\MacroNode $node
-	 * @param Latte\PhpWriter $writer
-	 * @return string
-	 */
 	public function attrMacroImg(Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
 		[$img, $type] = $this->getImageFromNode($node);
 
-		return sprintf('echo \' src="\' . %s::imgLink(%s, %s) . \'"\'', get_class($this), $writer->formatWord($img), $this->formatMacroArgs($type, $node, $writer));
+		return sprintf(
+			'echo \' src="\' . %s::imgLink(%s, %s) . \'"\';',
+			get_class($this),
+			$writer->formatWord($img),
+			$this->formatMacroArgs($type, $node, $writer)
+		);
 	}
 
 
-	/**
-	 * {imgLink $img [type] [, width, height, transform, compression, ...]}
-	 *
-	 * @param Latte\MacroNode $node
-	 * @param Latte\PhpWriter $writer
-	 * @return string
-	 */
 	public function macroImgLink(Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
 		[$img, $type] = $this->getImageFromNode($node);
 
-		return sprintf('echo %s::imgLink(%s, %s)', get_class($this), $writer->formatWord($img), $this->formatMacroArgs($type, $node, $writer));
+		return sprintf(
+			'echo %s::imgLink(%s, %s);',
+			get_class($this),
+			$writer->formatWord($img),
+			$this->formatMacroArgs($type, $node, $writer)
+		);
 	}
 
 
-	/**
-	 * @param string $type
-	 * @param Latte\MacroNode $node
-	 * @param Latte\PhpWriter $writer
-	 * @return string
-	 */
 	private function formatMacroArgs(string $type, Latte\MacroNode $node, Latte\PhpWriter $writer): string
 	{
 		return sprintf(
@@ -90,10 +74,6 @@ class Macros extends Latte\Macros\MacroSet
 	}
 
 
-	/**
-	 * @param Latte\MacroNode $node
-	 * @return array
-	 */
 	private function getImageFromNode(Latte\MacroNode $node): array
 	{
 		$img = $node->tokenizer->fetchWord();
@@ -114,22 +94,51 @@ class Macros extends Latte\Macros\MacroSet
 
 
 	/**
-	 * generate HTML
-	 *
-	 * @param string|Harmim\Images\IItem $img
+	 * @param string|Harmim\Images\IImage|mixed $img
 	 * @param array $args
-	 * @return string|NULL
+	 * @return string|null
 	 */
 	public static function img($img, array $args): ?string
 	{
 		if ($image = static::getImage($img, $args)) {
+			$lazy = !empty($args['lazy']);
+
 			$args = array_filter($args, function ($key) {
-				return in_array($key, Harmim\Images\DI\ImagesExtension::DEFAULTS['imgTagAttributes'], true);
+				foreach (Harmim\Images\DI\ImagesExtension::DEFAULTS['imgTagAttributes'] as $attr) {
+					if (Nette\Utils\Strings::startsWith($key, $attr)) {
+						return true;
+					}
+				}
+
+				return false;
 			}, ARRAY_FILTER_USE_KEY);
 
-			$args['src'] = (string) $image;
+			$classes = explode(' ', $args['class'] ?? '');
+			unset($args['class']);
 
-			return (string) Nette\Utils\Html::el('img', $args);
+			$imgTag = Nette\Utils\Html::el('img');
+			$imgTag->src = (string) $image;
+			$imgTag->class = $classes;
+			$imgTag->addAttributes($args);
+
+			if ($lazy) {
+				$lazyImgTag = Nette\Utils\Html::el('img');
+				$lazyImgTag->data('src', (string) $image);
+				array_unshift($classes, 'lazy');
+				$lazyImgTag->class = $classes;
+				$lazyImgTag->addAttributes($args);
+
+				$noscriptTag = Nette\Utils\Html::el('noscript');
+				$noscriptTag->addHtml($imgTag);
+
+				$wrapper = Nette\Utils\Html::el()
+					->addHtml($lazyImgTag)
+					->addHtml($noscriptTag);
+
+				return (string) $wrapper;
+			}
+
+			return (string) $imgTag;
 		}
 
 		return null;
@@ -137,9 +146,9 @@ class Macros extends Latte\Macros\MacroSet
 
 
 	/**
-	 * @param string|Harmim\Images\IItem $img
+	 * @param string|Harmim\Images\IImage|mixed $img
 	 * @param array $args
-	 * @return string|NULL
+	 * @return string|null
 	 */
 	public static function imgLink($img, array $args): ?string
 	{
@@ -152,17 +161,16 @@ class Macros extends Latte\Macros\MacroSet
 
 
 	/**
-	 * @param string|Harmim\Images\IItem $img
+	 * @param string|Harmim\Images\IImage|mixed $img
 	 * @param array $args
-	 * @return Harmim\Images\Image|NULL
+	 * @return Harmim\Images\Image|null
 	 * @throws Nette\InvalidStateException
 	 */
 	public static function getImage($img, array &$args): ?Harmim\Images\Image
 	{
 		if (empty($args['storage']) || !$args['storage'] instanceof Harmim\Images\ImageStorage) {
 			throw new Nette\InvalidStateException(sprintf(
-				'The template was not forwarded instance of %s to macro img/imgLink,
-				it should have in variable $imageStorage.',
+				'The template was not forwarded instance of %s to macro img/imgLink, it should have in variable $imageStorage.',
 				Harmim\Images\ImageStorage::class
 			));
 		}

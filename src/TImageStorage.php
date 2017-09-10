@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2016 Dominik Harmim
+ * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images;
@@ -12,9 +12,6 @@ namespace Harmim\Images;
 use Harmim;
 
 
-/**
- * This trait can be used in component attached to Nette\Application\UI\Presenter
- */
 trait TImageStorage
 {
 	/**
@@ -23,7 +20,7 @@ trait TImageStorage
 	protected $imageStorage;
 
 
-	public function injectImageStorage(Harmim\Images\ImageStorage $imageStorage)
+	public function injectImageStorage(Harmim\Images\ImageStorage $imageStorage): void
 	{
 		$this->imageStorage = $imageStorage;
 	}

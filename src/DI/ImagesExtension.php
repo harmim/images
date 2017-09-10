@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2016 Dominik Harmim
+ * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images\DI;
@@ -24,30 +24,24 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 		'width' => 1024,
 		'height' => 1024,
 		'compression' => 85,
-		'transform' => 'fit',
-		'imgTagAttributes' => ['alt', 'height', 'width', 'class', 'hidden', 'id', 'style', 'title'],
+		'transform' => Harmim\Images\ImageStorage::RESIZE_FIT,
+		'imgTagAttributes' => ['alt', 'height', 'width', 'class', 'hidden', 'id', 'style', 'title', 'data'],
 		'types' => [],
-		'square' => false,
+		'lazy' => false,
 	];
 
 
-	/**
-	 * @inheritdoc
-	 */
-	public function loadConfiguration()
+	public function loadConfiguration(): void
 	{
 		$builder = $this->getContainerBuilder();
 
 		$builder->addDefinition($this->prefix('images'))
-			->setClass(Harmim\Images\ImageStorage::class)
+			->setFactory(Harmim\Images\ImageStorage::class)
 			->setArguments([$this->getSettings()]);
 	}
 
 
-	/**
-	 * @inheritdoc
-	 */
-	public function beforeCompile()
+	public function beforeCompile(): void
 	{
 		$builder = $this->getContainerBuilder();
 
@@ -56,12 +50,9 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 	}
 
 
-	/**
-	 * @return array
-	 */
-	public function getSettings(): array
+	private function getSettings(): array
 	{
-		$config = $this->validateConfig(self::DEFAULTS, $this->config);
+		$config = $this->validateConfig(static::DEFAULTS, $this->config);
 		$config['wwwDir'] = Nette\DI\Helpers::expand($config['wwwDir'], $this->getContainerBuilder()->parameters);
 
 		return $config;

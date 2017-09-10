@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2016 Dominik Harmim
+ * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images;
 
 
-interface IItem
+interface IImage
 {
-	/**
-	 * @return string
-	 */
 	function getFileName(): string;
 }
