@@ -50,6 +50,9 @@ jobs:
                 # install Nette Code Checker
                 - travis_retry composer create-project nette/code-checker temp/code-checker ^2.11 --no-interaction
 
+                # Composer install
+                - travis_retry composer update --no-interaction --prefer-dist --prefer-stable
+
             script:
                 # run Nette Code Checker
                 - php temp/code-checker/src/code-checker.php --short-arrays --strict-types
