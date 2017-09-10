@@ -2,7 +2,6 @@
 
 [![Build Status](https://travis-ci.org/harmim/images.svg?branch=master)](https://travis-ci.org/harmim/images)
 [![Coverage Status](https://coveralls.io/repos/github/harmim/images/badge.svg?branch=master)](https://coveralls.io/github/harmim/images?branch=master)
-
 [![Monthly Downloads](https://poser.pugx.org/harmim/images/d/monthly)](https://packagist.org/packages/harmim/images)
 [![Total Downloads](https://poser.pugx.org/harmim/images/downloads)](https://packagist.org/packages/harmim/images)
 [![Latest Stable Version](https://poser.pugx.org/harmim/images/v/stable)](https://github.com/harmim/images/releases)
