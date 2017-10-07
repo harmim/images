@@ -32,7 +32,6 @@ class ImageStorage
 		self::RESIZE_EXACT => Nette\Utils\Image::EXACT,
 	];
 
-
 	/**
 	 * @var array
 	 */
