@@ -7,7 +7,6 @@ php:
 
 env:
     - PHP_BIN=php
-    - PHP_BIN=php-cgi
 
 
 before_install:
@@ -44,24 +43,24 @@ jobs:
                 - php coveralls.phar --verbose --config tests/.coveralls.yml
 
 
-        -   stage: Code Standard Checker
-
-            install:
-                # install Nette Code Checker
-                - travis_retry composer create-project nette/code-checker temp/code-checker ^2.11 --no-interaction
-
-                # Composer install
-                - travis_retry composer update --no-interaction --prefer-dist --prefer-stable
-
-            script:
-                # run Nette Code Checker
-                - php temp/code-checker/src/code-checker.php --short-arrays --strict-types
-
-                # run Nette Coding Standard checker
-                - composer cs
-
-    allow_failures:
-        -   stage: Code Coverage
+#        -   stage: Code Standard Checker
+#
+#            install:
+#                # install Nette Code Checker
+#                - travis_retry composer create-project nette/code-checker temp/code-checker ^2.11 --no-interaction
+#
+#                # Composer install
+#                - travis_retry composer update --no-interaction --prefer-dist --prefer-stable
+#
+#            script:
+#                # run Nette Code Checker
+#                - php temp/code-checker/src/code-checker.php --short-arrays --strict-types
+#
+#                # run Nette Coding Standard checker
+#                - composer cs
+#
+#    allow_failures:
+#        -   stage: Code Coverage
 
 
 sudo: false
