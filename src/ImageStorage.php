@@ -296,8 +296,8 @@ class ImageStorage
 		$image->resize(null, $options['height']);
 		$blank->place(
 			$image,
-			$options['width'] / 2 - $image->getWidth() / 2,
-			$options['height'] / 2 - $image->getHeight() / 2
+			(int) ($options['width'] / 2 - $image->getWidth() / 2),
+			(int) ($options['height'] / 2 - $image->getHeight() / 2)
 		);
 		$image = $blank;
 		$type = Nette\Utils\Image::PNG;
