@@ -72,6 +72,7 @@ tests-coverage-run: install docker-compose-php
 	$(DOCKER_PHP) ./$(VENDOR_BIN_DIR)/tester -p phpdbg $(TESTS_DIR) -s -C --coverage coverage.xml \
 		--coverage-src $(SRC_DIR)
 ifeq ($(CI), 1)
+	$(DOCKER_PHP) git config --global --add safe.directory /app
 	$(DOCKER_PHP) ./$(COVERALLS_DIR)/bin/php-coveralls --verbose --config $(TESTS_DIR)/.coveralls.github-actions.yml
 else
 	$(DOCKER_PHP) ./$(COVERALLS_DIR)/bin/php-coveralls --verbose --config $(TESTS_DIR)/.coveralls.local.yml
