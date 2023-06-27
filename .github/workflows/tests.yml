@@ -1,0 +1,27 @@
+# Author: Dominik Harmim <harmim6@gmail.com>
+
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: make tests CI=1
+      - if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: output
+          path: tests/**/output
+
+  tests-coverage:
+    name: Tests Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          echo "repo_token: ${{ secrets.GITHUB_TOKEN }}" >> tests/.coveralls.github-actions.yml
+          make tests-coverage CI=1

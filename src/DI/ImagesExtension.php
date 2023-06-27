@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images\DI;
@@ -17,12 +16,12 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 {
 	public const DEFAULTS = [
 		'wwwDir' => '%wwwDir%',
-		'imagesDir' => 'data/images',
+		'imagesDir' => 'data' . DIRECTORY_SEPARATOR . 'images',
 		'origDir' => 'orig',
 		'compressionDir' => 'imgs',
-		'placeholder' => 'img/noimg.jpg',
-		'width' => 1024,
-		'height' => 1024,
+		'placeholder' => 'img' . DIRECTORY_SEPARATOR . 'noimg.jpg',
+		'width' => 1_024,
+		'height' => 1_024,
 		'compression' => 85,
 		'transform' => Harmim\Images\ImageStorage::RESIZE_FIT,
 		'imgTagAttributes' => ['alt', 'height', 'width', 'class', 'hidden', 'id', 'style', 'title', 'data'],
@@ -33,9 +32,8 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 
 	public function loadConfiguration(): void
 	{
-		$builder = $this->getContainerBuilder();
-
-		$builder->addDefinition($this->prefix('images'))
+		$this->getContainerBuilder()
+			->addDefinition($this->prefix('imageStorage'))
 			->setFactory(Harmim\Images\ImageStorage::class)
 			->setArguments([$this->getSettings()]);
 	}
@@ -43,9 +41,8 @@ class ImagesExtension extends Nette\DI\CompilerExtension
 
 	public function beforeCompile(): void
 	{
-		$builder = $this->getContainerBuilder();
-
-		$builder->getDefinition('latte.latteFactory')
+		$this->getContainerBuilder()
+			->getDefinition('latte.latteFactory')
 			->addSetup(Harmim\Images\Template\Macros::class . '::install(?->getCompiler())', ['@self']);
 	}
 

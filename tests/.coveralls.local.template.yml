@@ -1,0 +1,6 @@
+# Author: Dominik Harmim <harmim6@gmail.com>
+
+service_name: php-coveralls
+coverage_clover: coverage.xml
+json_path: coverage.json
+repo_token: ...

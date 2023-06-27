@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images;
@@ -16,6 +15,9 @@ class ImageStorage
 {
 	use Nette\SmartObject;
 
+
+	public const RETURN_ORIG = 'return_orig',
+		RETURN_COMPRESSED = 'return_compressed';
 
 	public const RESIZE_SHRINK_ONLY = 'shrink_only',
 		RESIZE_STRETCH = 'stretch',
@@ -32,35 +34,17 @@ class ImageStorage
 		self::RESIZE_EXACT => Nette\Utils\Image::EXACT,
 	];
 
-	/**
-	 * @var array
-	 */
-	private $config;
+	private array $config;
 
-	/**
-	 * @var array
-	 */
-	private $types = [];
+	private array $types = [];
 
-	/**
-	 * @var string
-	 */
-	private $baseDir;
+	private string $baseDir;
 
-	/**
-	 * @var string
-	 */
-	private $placeholder;
+	private string $placeholder;
 
-	/**
-	 * @var string
-	 */
-	private $origDir;
+	private string $origDir;
 
-	/**
-	 * @var string
-	 */
-	private $compressionDir;
+	private string $compressionDir;
 
 
 	public function __construct(array $config)
@@ -76,6 +60,13 @@ class ImageStorage
 	}
 
 
+	/**
+	 * @param Nette\Http\FileUpload $file
+	 * @return string
+	 *
+	 * @throws Nette\Utils\ImageException
+	 * @throws Nette\IOException
+	 */
 	public function saveUpload(Nette\Http\FileUpload $file): string
 	{
 		if ($file->isOk()) {
@@ -86,6 +77,13 @@ class ImageStorage
 	}
 
 
+	/**
+	 * @param string $name
+	 * @param string $path
+	 * @return string
+	 *
+	 * @throws Nette\Utils\ImageException
+	 */
 	public function saveImage(string $name, string $path): string
 	{
 		$file = new Nette\Http\FileUpload([
@@ -112,35 +110,32 @@ class ImageStorage
 
 
 	/**
-	 * @param string|IImage|mixed $fileName
-	 * @param array $excludedTypes
+	 * @param string $file
+	 * @param string[] $excludedTypes
 	 * @return void
 	 */
-	public function deleteImage($fileName, array $excludedTypes = []): void
+	public function deleteImage(string $file, array $excludedTypes = []): void
 	{
-		$fileName = $this->resolveFileName($fileName);
-
 		if (!$excludedTypes) {
-			Nette\Utils\FileSystem::delete($this->getOrigPath($fileName));
-			Nette\Utils\FileSystem::delete($this->getCompressionPath($fileName));
+			Nette\Utils\FileSystem::delete($this->getOrigPath($file));
+			Nette\Utils\FileSystem::delete($this->getCompressionPath($file));
 		}
 
 		foreach ($this->types as $key => $value) {
 			if (!$excludedTypes || !in_array($key, $excludedTypes, true)) {
-				Nette\Utils\FileSystem::delete($this->getDestPath($fileName, ['type' => $key]));
+				Nette\Utils\FileSystem::delete($this->getDestPath($file, ['type' => $key]));
 			}
 		}
 
 		if (is_readable($this->baseDir)) {
 			$excludedFolders = array_keys($this->types) + [
-					$this->origDir,
-					$this->compressionDir,
-				];
+				$this->config['origDir'],
+				$this->config['compressionDir'],
+			];
 
-			/** @var \SplFileInfo $file */
-			foreach (Nette\Utils\Finder::find($this->getSubDir($fileName) . '/' . $fileName)
+			foreach (Nette\Utils\Finder::find($this->getSubDir($file) . DIRECTORY_SEPARATOR . $file)
 				->from($this->baseDir)
-				->exclude($excludedFolders) as $file) {
+				->exclude(...$excludedFolders) as $file) {
 				Nette\Utils\FileSystem::delete($file->getRealPath());
 			}
 		}
@@ -148,48 +143,47 @@ class ImageStorage
 
 
 	/**
-	 * @param string|IImage|mixed $fileName
+	 * @param string $file
 	 * @param string|null $type
 	 * @param array $options
 	 * @return string|null
+	 *
+	 * @throws Nette\Utils\ImageException
 	 */
-	public function getImageLink($fileName, ?string $type = null, array $options = []): ?string
+	public function getImageLink(string $file, ?string $type = null, array $options = []): ?string
 	{
 		if ($type !== null) {
 			$options['type'] = $type;
 		}
 
-		$image = $this->getImage($this->resolveFileName($fileName), $options);
-
-		return $image ? (string) $image : null;
+		return ($image = $this->getImage($file, $options)) ? (string) $image : null;
 	}
 
 
 	/**
 	 * @internal
-	 * @param string|IImage|mixed $fileName
+	 *
+	 * @param string $file
 	 * @param array $args
 	 * @return Image|null
+	 *
+	 * @throws Nette\Utils\ImageException
 	 */
-	public function getImage($fileName, array $args = []): ?Image
+	public function getImage(string $file, array $args = []): ?Image
 	{
-		$fileName = $this->resolveFileName($fileName);
-
 		$options = $this->getOptions($args);
-		$srcPath = $this->getCompressionPath($fileName);
+		$srcPath = $this->getCompressionPath($file);
 
-		if (!$fileName || !is_readable($srcPath)) {
+		if (!$file || !is_readable($srcPath)) {
 			return $this->getPlaceholderImage($options);
 		}
 
-		$destPath = $this->getDestPath($fileName, $options);
+		$destPath = $this->getDestPath($file, $options);
 
 		if (is_readable($destPath)) {
 			[$width, $height] = getimagesize($destPath);
-
 		} elseif ($image = $this->createImage($srcPath, $destPath, $options)) {
 			[$width, $height] = $image;
-
 		} else {
 			return $this->getPlaceholderImage($options);
 		}
@@ -200,6 +194,7 @@ class ImageStorage
 
 	/**
 	 * @internal
+	 *
 	 * @param string $fileName
 	 * @return string
 	 */
@@ -211,6 +206,7 @@ class ImageStorage
 
 	/**
 	 * @internal
+	 *
 	 * @param array $args
 	 * @return array
 	 */
@@ -218,14 +214,26 @@ class ImageStorage
 	{
 		$type = [];
 
-		if (!empty($args['type']) && array_key_exists($args['type'], $this->types)) {
+		if (
+			!empty($args['type'])
+			&& array_key_exists($args['type'], $this->types)
+			&& is_array($this->types[$args['type']])
+		) {
 			$type = $this->types[$args['type']];
 		}
 
-		return (array) (($args ?: []) + $type + $this->config);
+		return $args + $type + $this->config;
 	}
 
 
+	/**
+	 * @param string $srcPath
+	 * @param string $destPath
+	 * @param array $options
+	 * @return array
+	 *
+	 * @throws Nette\Utils\ImageException
+	 */
 	private function createImage(string $srcPath, string $destPath, array $options = []): array
 	{
 		if (!$options) {
@@ -250,29 +258,26 @@ class ImageStorage
 	}
 
 
-	private function transformImage(Nette\Utils\Image &$image, array $options, string $srcPath, ?int &$type)
+	private function transformImage(Nette\Utils\Image &$image, array $options, string $srcPath, ?int &$type): void
 	{
-		$resizeFlags = Nette\Utils\Image::FIT;
+		$resizeFlags = static::RESIZE_FLAGS[static::RESIZE_FIT];
 
 		if (!empty($options['transform'])) {
 			if (strpos($options['transform'], '|') !== false) {
 				$resizeFlags = 0;
 
 				foreach (explode('|', $options['transform']) as $flag) {
-					if (isset(self::RESIZE_FLAGS[$flag])) {
-						$resizeFlags |= self::RESIZE_FLAGS[$flag];
-
-					} elseif ($flag === self::RESIZE_FILL_EXACT) {
+					if (isset(static::RESIZE_FLAGS[$flag])) {
+						$resizeFlags |= static::RESIZE_FLAGS[$flag];
+					} elseif ($flag === static::RESIZE_FILL_EXACT) {
 						$this->transformFillExact($image, $options, $srcPath, $type);
 
 						return;
 					}
 				}
-
-			} elseif (isset(self::RESIZE_FLAGS[$options['transform']])) {
-				$resizeFlags = self::RESIZE_FLAGS[$options['transform']];
-
-			} elseif ($options['transform'] === self::RESIZE_FILL_EXACT) {
+			} elseif (isset(static::RESIZE_FLAGS[$options['transform']])) {
+				$resizeFlags = static::RESIZE_FLAGS[$options['transform']];
+			} elseif ($options['transform'] === static::RESIZE_FILL_EXACT) {
 				$this->transformFillExact($image, $options, $srcPath, $type);
 
 				return;
@@ -283,7 +288,7 @@ class ImageStorage
 	}
 
 
-	private function transformFillExact(Nette\Utils\Image &$image, array $options, string $srcPath, ?int &$type)
+	private function transformFillExact(Nette\Utils\Image &$image, array $options, string $srcPath, ?int &$type): void
 	{
 		if ($this->isTransparentPng($srcPath)) {
 			$color = Nette\Utils\Image::rgb(255, 255, 255, 127);
@@ -297,7 +302,7 @@ class ImageStorage
 		$blank->place(
 			$image,
 			(int) ($options['width'] / 2 - $image->getWidth() / 2),
-			(int) ($options['height'] / 2 - $image->getHeight() / 2)
+			(int) ($options['height'] / 2 - $image->getHeight() / 2),
 		);
 		$image = $blank;
 		$type = Nette\Utils\Image::PNG;
@@ -315,10 +320,9 @@ class ImageStorage
 		$width = imagesx($image);
 		$height = imagesy($image);
 
-		for ($i = 0; $i < $width; $i++) {
-			for ($j = 0; $j < $height; $j++) {
-				$rgba = imagecolorat($image, $i, $j);
-				if (($rgba & 0x7F000000) >> 24) {
+		for ($x = 0; $x < $width; $x++) {
+			for ($y = 0; $y < $height; $y++) {
+				if ((imagecolorat($image, $x, $y) & 0x7F00_0000) >> 24) {
 					return true;
 				}
 			}
@@ -330,15 +334,15 @@ class ImageStorage
 
 	private function getPlaceholderImage(array $options): ?Image
 	{
-		if (is_readable($this->placeholder)) {
-			return new Image(
-				$this->createRelativeWWWPath($this->placeholder),
-				(int) $options['width'],
-				(int) $options['height']
-			);
+		if (!is_readable($this->placeholder)) {
+			return null;
 		}
 
-		return null;
+		return new Image(
+			$this->createRelativeWWWPath($this->placeholder),
+			(int) $options['width'],
+			(int) $options['height'],
+		);
 	}
 
 
@@ -350,7 +354,11 @@ class ImageStorage
 
 	private function getCompressionPath(string $fileName): string
 	{
-		return $this->compressionDir . DIRECTORY_SEPARATOR . $this->getSubDir($fileName) . DIRECTORY_SEPARATOR
+		return
+			$this->compressionDir
+			. DIRECTORY_SEPARATOR
+			. $this->getSubDir($fileName)
+			. DIRECTORY_SEPARATOR
 			. $fileName;
 	}
 
@@ -367,18 +375,26 @@ class ImageStorage
 			$options = $this->config;
 		}
 
-		if (!empty($options['destDir'])) {
+		if (!empty($options[static::RETURN_ORIG])) {
+			return $this->getOrigPath($fileName);
+		} elseif (!empty($options[static::RETURN_COMPRESSED])) {
+			return $this->getCompressionPath($fileName);
+		} elseif (!empty($options['destDir'])) {
 			$destDir = $options['destDir'];
-
 		} elseif (!empty($options['type']) && array_key_exists($options['type'], $this->types)) {
 			$destDir = $options['type'];
-
 		} else {
 			$destDir = "w{$options['width']}h{$options['height']}";
 		}
 
-		return $this->baseDir . DIRECTORY_SEPARATOR . $destDir . DIRECTORY_SEPARATOR . $this->getSubDir($fileName)
-			. DIRECTORY_SEPARATOR . $fileName;
+		return
+			$this->baseDir
+			. DIRECTORY_SEPARATOR
+			. $destDir
+			. DIRECTORY_SEPARATOR
+			. $this->getSubDir($fileName)
+			. DIRECTORY_SEPARATOR
+			. $fileName;
 	}
 
 
@@ -394,24 +410,13 @@ class ImageStorage
 
 	private function getRandomFileName(string $fileName): string
 	{
-		$name = Nette\Utils\Random::generate(10);
-		$name = $name . substr(md5($name), -5) . substr(str_shuffle(md5($fileName)), -5) . '.'
+		$name = Nette\Utils\Random::generate();
+
+		return
+			$name
+			. substr(md5($name), -5)
+			. substr(str_shuffle(md5($fileName)), -5)
+			. '.'
 			. pathinfo($fileName, PATHINFO_EXTENSION);
-
-		return $name;
-	}
-
-
-	/**
-	 * @param string|IImage|mixed $fileName
-	 * @return string
-	 */
-	private function resolveFileName($fileName): string
-	{
-		if ($fileName instanceof IImage) {
-			return $fileName->getFileName();
-		}
-
-		return (string) $fileName;
 	}
 }

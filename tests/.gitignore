@@ -1,3 +1,6 @@
-/temp/
-/**/output/
-!/.coveralls.yml
+# Author: Dominik Harmim <harmim6@gmail.com>
+
+/**/output
+/temp
+
+/.coveralls.local.yml

@@ -1,32 +1,31 @@
 <?php
 
+/** @noinspection PhpUndefinedClassInspection */
+/** @noinspection PhpUndefinedNamespaceInspection */
+
 declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images;
 
-use Harmim;
+use Nette;
 
 
 trait TImageStorage
 {
-	/**
-	 * @var Harmim\Images\ImageStorage
-	 */
-	protected $imageStorage;
+	protected ImageStorage $imageStorage;
 
 
-	public function injectImageStorage(Harmim\Images\ImageStorage $imageStorage): void
+	public function injectImageStorage(ImageStorage $imageStorage): void
 	{
 		$this->imageStorage = $imageStorage;
 	}
 
 
-	protected function createTemplate()
+	protected function createTemplate(): Nette\Application\UI\ITemplate
 	{
 		$template = parent::createTemplate();
 		$template->imageStorage = $this->imageStorage;

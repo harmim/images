@@ -1,5 +1,8 @@
-.*
-!/.travis.yml
-!.gitignore
-/vendor/
+# Author: Dominik Harmim <harmim6@gmail.com>
+
+/.idea
+/temp/*
+/vendor/*
+
 /composer.lock
+/coverage.*

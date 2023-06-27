@@ -1,0 +1,13 @@
+# Author: Dominik Harmim <harmim6@gmail.com>
+
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: make CI=1

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images\Template;
@@ -33,7 +32,7 @@ class Macros extends Latte\Macros\MacroSet
 			'echo %s::img(%s, %s);',
 			get_class($this),
 			$writer->formatWord($img),
-			$this->formatMacroArgs($type, $node, $writer)
+			$this->formatMacroArgs($type, $node, $writer),
 		);
 	}
 
@@ -46,7 +45,7 @@ class Macros extends Latte\Macros\MacroSet
 			'echo \' src="\' . %s::imgLink(%s, %s) . \'"\';',
 			get_class($this),
 			$writer->formatWord($img),
-			$this->formatMacroArgs($type, $node, $writer)
+			$this->formatMacroArgs($type, $node, $writer),
 		);
 	}
 
@@ -59,7 +58,7 @@ class Macros extends Latte\Macros\MacroSet
 			'echo %s::imgLink(%s, %s);',
 			get_class($this),
 			$writer->formatWord($img),
-			$this->formatMacroArgs($type, $node, $writer)
+			$this->formatMacroArgs($type, $node, $writer),
 		);
 	}
 
@@ -69,11 +68,15 @@ class Macros extends Latte\Macros\MacroSet
 		return sprintf(
 			'[%s\'storage\' => $imageStorage%s]',
 			$type ? "'type' => '$type', " : '',
-			$node->args ? ", {$writer->formatArgs()}" : ''
+			$node->args ? ", {$writer->formatArgs()}" : '',
 		);
 	}
 
 
+	/**
+	 * @param Latte\MacroNode $node
+	 * @return string[]
+	 */
 	private function getImageFromNode(Latte\MacroNode $node): array
 	{
 		$img = $node->tokenizer->fetchWord();
@@ -81,8 +84,7 @@ class Macros extends Latte\Macros\MacroSet
 
 		if ($node->tokenizer->isNext()) {
 			$type = $node->tokenizer->fetchWord();
-
-			if ($node->tokenizer->isNext() && $node->tokenizer->isNext('=>')) {
+			if (Nette\Utils\Strings::contains($type, '=>')) {
 				$node->tokenizer->reset();
 				$img = $node->tokenizer->fetchWord();
 				$type = '';
@@ -94,93 +96,101 @@ class Macros extends Latte\Macros\MacroSet
 
 
 	/**
-	 * @param string|Harmim\Images\IImage|mixed $img
+	 * @param string $file
 	 * @param array $args
 	 * @return string|null
+	 *
+	 * @throws Nette\Utils\ImageException
 	 */
-	public static function img($img, array $args): ?string
+	public static function img(string $file, array $args): ?string
 	{
-		if ($image = static::getImage($img, $args)) {
-			$lazy = !empty($args['lazy']);
+		if (!($image = static::getImage($file, $args))) {
+			return null;
+		}
 
-			$args = array_filter($args, function ($key) {
-				foreach (Harmim\Images\DI\ImagesExtension::DEFAULTS['imgTagAttributes'] as $attr) {
-					if (Nette\Utils\Strings::startsWith($key, $attr)) {
-						return true;
-					}
+		$lazy = !empty($args['lazy']);
+
+		$args = array_filter($args, static function (string $key) use ($args): bool {
+			foreach ($args['imgTagAttributes'] as $attr) {
+				if (Nette\Utils\Strings::startsWith($key, $attr)) {
+					return true;
 				}
-
-				return false;
-			}, ARRAY_FILTER_USE_KEY);
-
-			$classes = explode(' ', $args['class'] ?? '');
-			unset($args['class']);
-
-			$imgTag = Nette\Utils\Html::el('img');
-			$imgTag->src = (string) $image;
-			$imgTag->class = $classes;
-			$imgTag->addAttributes($args);
-
-			if ($lazy) {
-				$lazyImgTag = Nette\Utils\Html::el('img');
-				$lazyImgTag->data('src', (string) $image);
-				array_unshift($classes, 'lazy');
-				$lazyImgTag->class = $classes;
-				$lazyImgTag->addAttributes($args);
-
-				$noscriptTag = Nette\Utils\Html::el('noscript');
-				$noscriptTag->addHtml($imgTag);
-
-				$wrapper = Nette\Utils\Html::el()
-					->addHtml($lazyImgTag)
-					->addHtml($noscriptTag);
-
-				return (string) $wrapper;
 			}
 
-			return (string) $imgTag;
+			return false;
+		}, ARRAY_FILTER_USE_KEY);
+
+		$classes = explode(' ', $args['class'] ?? '');
+		unset($args['class']);
+
+		$imgTag = Nette\Utils\Html::el('img');
+		$imgTag->src = (string) $image;
+		$imgTag->class = $classes;
+		$imgTag->addAttributes($args);
+		if (empty($args['alt'])) {
+			$imgTag->alt = (string) $image;
 		}
 
-		return null;
+		if ($lazy) {
+			$lazyImgTag = Nette\Utils\Html::el('img');
+			$lazyImgTag->data('src', (string) $image);
+			array_unshift($classes, 'lazy');
+			$lazyImgTag->class = $classes;
+			$lazyImgTag->addAttributes($args);
+			if (empty($args['alt'])) {
+				$lazyImgTag->alt = (string) $image;
+			}
+
+			$noscriptTag = Nette\Utils\Html::el('noscript');
+			$noscriptTag->addHtml($imgTag);
+
+			$wrapper = Nette\Utils\Html::el()
+				->addHtml($lazyImgTag)
+				->addHtml($noscriptTag);
+
+			return (string) $wrapper;
+		}
+
+		return (string) $imgTag;
 	}
 
 
 	/**
-	 * @param string|Harmim\Images\IImage|mixed $img
+	 * @param string $file
 	 * @param array $args
 	 * @return string|null
+	 *
+	 * @throws Nette\Utils\ImageException
 	 */
-	public static function imgLink($img, array $args): ?string
+	public static function imgLink(string $file, array $args): ?string
 	{
-		if ($image = static::getImage($img, $args)) {
-			return (string) $image;
-		}
-
-		return null;
+		return ($image = static::getImage($file, $args)) ? (string) $image : null;
 	}
 
 
 	/**
-	 * @param string|Harmim\Images\IImage|mixed $img
+	 * @param string $file
 	 * @param array $args
 	 * @return Harmim\Images\Image|null
+	 *
+	 * @throws Nette\Utils\ImageException
 	 * @throws Nette\InvalidStateException
 	 */
-	public static function getImage($img, array &$args): ?Harmim\Images\Image
+	public static function getImage(string $file, array &$args): ?Harmim\Images\Image
 	{
 		if (empty($args['storage']) || !$args['storage'] instanceof Harmim\Images\ImageStorage) {
 			throw new Nette\InvalidStateException(sprintf(
-				'The template was not forwarded instance of %s to macro img/imgLink, it should have in variable $imageStorage.',
-				Harmim\Images\ImageStorage::class
+				"The template did not forward an instance of '%s' to macro 'img'/'imgLink'"
+				. ", it should be in variable '\$imageStorage'.",
+				Harmim\Images\ImageStorage::class,
 			));
 		}
 
-		/** @var Harmim\Images\ImageStorage $imageStorage */
 		$imageStorage = $args['storage'];
 		unset($args['storage']);
 
 
-		$image = $imageStorage->getImage($img, $args);
+		$image = $imageStorage->getImage($file, $args);
 		$args = $imageStorage->getOptions($args);
 
 		return $image;

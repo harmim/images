@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 /**
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Images;
@@ -22,20 +21,11 @@ class Image
 	use Nette\SmartObject;
 
 
-	/**
-	 * @var string
-	 */
-	private $src;
+	private string $src;
 
-	/**
-	 * @var int
-	 */
-	private $width;
+	private int $width;
 
-	/**
-	 * @var int
-	 */
-	private $height;
+	private int $height;
 
 
 	public function __construct(string $src, int $width, int $height)
@@ -52,7 +42,7 @@ class Image
 	}
 
 
-	public function setSrc(string $src): Image
+	public function setSrc(string $src): self
 	{
 		$this->src = $src;
 
@@ -66,7 +56,7 @@ class Image
 	}
 
 
-	public function setWidth(int $width): Image
+	public function setWidth(int $width): self
 	{
 		$this->width = $width;
 
@@ -80,7 +70,7 @@ class Image
 	}
 
 
-	public function setHeight(int $height): Image
+	public function setHeight(int $height): self
 	{
 		$this->height = $height;
 
@@ -88,8 +78,8 @@ class Image
 	}
 
 
-	public function __toString()
+	public function __toString(): string
 	{
-		return $this->getSrc();
+		return $this->src;
 	}
 }

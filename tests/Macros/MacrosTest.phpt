@@ -1,14 +1,13 @@
 <?php
 
+/** @noinspection HtmlUnknownTarget, HtmlRequiredAltAttribute, RequiredAttributes */
+
 declare(strict_types=1);
 
 /**
  * Test: Macros
  *
- * @testCase Harmim\Tests\Macros\MacrosTest
- *
  * @author Dominik Harmim <harmim6@gmail.com>
- * @copyright Copyright (c) 2017 Dominik Harmim
  */
 
 namespace Harmim\Tests\Macros;
@@ -17,71 +16,76 @@ use Harmim;
 use Latte;
 use Nette;
 use Tester;
-use Tester\Assert;
 
 
-require __DIR__ . '/../bootstrap.php';
+require __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'bootstrap.php';
 
 
+/**
+ * @testCase
+ */
 class MacrosTest extends Tester\TestCase
 {
-	/**
-	 * @var Latte\Engine
-	 */
-	private $latteEngine;
+	use Nette\SmartObject;
 
-	/**
-	 * @var Harmim\Images\ImageStorage
-	 */
-	private $imageStorage;
 
-	/**
-	 * @var int
-	 */
-	private $defaultWidth;
+	private Latte\Engine $latteEngine;
 
-	/**
-	 * @var int
-	 */
-	private $defaultHeight;
+	private Harmim\Images\ImageStorage $imageStorage;
+
+	private int $defaultWidth;
+
+	private int $defaultHeight;
+
+	private string $imagesDir;
+
+	private string $fileName;
+
+	private string $fileSubDir;
+
 
 	/**
-	 * @var string
+	 * @return void
+	 *
+	 * @throws Nette\Utils\ImageException
+	 * @throws Nette\IOException
 	 */
-	private $imagesDir;
-
-	/**
-	 * @var string
-	 */
-	private $fileName;
-
-	/**
-	 * @var string
-	 */
-	private $fileSubDir;
-
-
 	protected function setUp(): void
 	{
 		$this->latteEngine = new Latte\Engine();
 		Harmim\Images\Template\Macros::install($this->latteEngine->getCompiler());
 
-		$this->imageStorage = new Harmim\Images\ImageStorage((array) IMAGES_EXTENSION_CONFIG);
+		$this->imageStorage = new Harmim\Images\ImageStorage(IMAGES_EXTENSION_CONFIG);
 
 		$this->defaultWidth = IMAGES_EXTENSION_CONFIG['width'];
 		$this->defaultHeight = IMAGES_EXTENSION_CONFIG['height'];
 		$this->imagesDir = IMAGES_EXTENSION_CONFIG['imagesDir'];
 
-		Nette\Utils\FileSystem::copy(__TEMP_DIR__ . '/../../noimg.png', __TEMP_DIR__ . '/noimg.png');
+		Nette\Utils\FileSystem::copy(
+			__TEMP_DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'noimg.png',
+			__TEMP_DIR__ . DIRECTORY_SEPARATOR . 'noimg.png',
+		);
 		$this->fileName = $this->createImage();
 		$this->fileSubDir = $this->imageStorage->getSubDir($this->fileName);
 	}
 
 
+	/**
+	 * @return string
+	 *
+	 * @throws Nette\Utils\ImageException
+	 * @throws Nette\IOException
+	 */
 	private function createImage(): string
 	{
-		$tmpFileName = __TEMP_DIR__ . '/foo' . random_int(0, PHP_INT_MAX) . '.png';
-		Nette\Utils\FileSystem::copy(__TEMP_DIR__ . '/noimg.png', $tmpFileName);
+		try {
+			$rndInt = random_int(0, PHP_INT_MAX);
+		} catch (\Throwable $e) {
+			$rndInt = 42;
+		}
+
+		$tmpFileName = __TEMP_DIR__ . DIRECTORY_SEPARATOR . "foo$rndInt.png";
+		Nette\Utils\FileSystem::copy(__TEMP_DIR__ . DIRECTORY_SEPARATOR . 'noimg.png', $tmpFileName);
 
 		$upload = new Nette\Http\FileUpload([
 			'name' => 'foo.png',
@@ -95,98 +99,157 @@ class MacrosTest extends Tester\TestCase
 	}
 
 
-	public function testMacroImg()
+	public function testMacroImg(): void
 	{
-		Assert::same(
-			'<img src="/noimg.png" width="' . $this->defaultWidth . '" height="' . $this->defaultHeight . '">',
-			$this->evalMacro('{img}')
+		Tester\Assert::same(
+			'<img src="/noimg.png" width="'
+			. $this->defaultWidth
+			. '" height="'
+			. $this->defaultHeight
+			. '" alt="/noimg.png">',
+			$this->evalMacro('{img}'),
 		);
-		Assert::same(
-			'<img src="/noimg.png" class="small-class" width="1000" height="1000" title="small-title">',
-			$this->evalMacro('{img foo.png img-small}')
+		Tester\Assert::same(
+			'<img src="/noimg.png" class="small-class" alt="foo" width="1000" height="1000" title="small-title">',
+			$this->evalMacro('{img foo.png img-small alt => "foo"}'),
 		);
-		Assert::same(
-			'<img src="/' . $this->imagesDir . '/w1024h1024/' . $this->fileSubDir . '/' . $this->fileName . '" class="class" title="title" width="' . $this->defaultWidth . '" height="' . $this->defaultHeight . '">',
-			$this->evalMacro('{img ' . $this->fileName . ' class => "class", title => "title"}')
+		Tester\Assert::same(
+			'<img src="/'
+			. "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName"
+			. '" class="class" title="title" alt="foo" width="'
+			. $this->defaultWidth
+			. '" height="'
+			. $this->defaultHeight
+			. '">',
+			$this->evalMacro("{img $this->fileName class => 'class', title => 'title', alt => 'foo'}"),
 		);
-		Assert::same(
-			'<img src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '" class="small-class" alt="alt" width="500" height="1000" title="small-title">',
-			$this->evalMacro('{img ' . $this->fileName . ' img-small alt => "alt", width => 500}')
+		Tester\Assert::same(
+			'<img src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '" class="small-class" alt="alt" width="500" height="1000" title="small-title">',
+			$this->evalMacro("{img $this->fileName img-small alt => 'alt', width => 500}"),
+		);
+		Tester\Assert::same(
+			'<img src="/'
+			. "$this->imagesDir/"
+			. IMAGES_EXTENSION_CONFIG['origDir']
+			. "/$this->fileSubDir/$this->fileName"
+			. '" class="small-class" alt="alt" width="1000" height="1000" title="small-title">',
+			$this->evalMacro(
+				"{img $this->fileName img-small alt => 'alt', " . Harmim\Images\ImageStorage::RETURN_ORIG . ' => true}',
+			),
 		);
 	}
 
 
-	public function testMacroImgLazy()
+	public function testMacroImgLazy(): void
 	{
-		Assert::same(
-			'<img data-src="/noimg.png" class="lazy" width="' . $this->defaultWidth . '" height="' . $this->defaultHeight . '">'
-			. '<noscript><img src="/noimg.png" width="' . $this->defaultWidth . '" height="' . $this->defaultHeight . '"></noscript>',
-			$this->evalMacro('{img foo.png lazy => true}')
+		Tester\Assert::same(
+			'<img data-src="/noimg.png" class="lazy" width="'
+			. $this->defaultWidth
+			. '" height="'
+			. $this->defaultHeight
+			. '" alt="/noimg.png"><noscript><img src="/noimg.png" width="'
+			. $this->defaultWidth
+			. '" height="'
+			. $this->defaultHeight
+			. '" alt="/noimg.png"></noscript>',
+			$this->evalMacro('{img foo.png lazy => true}'),
 		);
-		Assert::same(
-			'<img data-src="/' . $this->imagesDir . '/w1024h1024/' . $this->fileSubDir . '/' . $this->fileName . '" class="lazy" width="' . $this->defaultWidth . '" height="' . $this->defaultHeight . '">'
-			. '<noscript><img src="/' . $this->imagesDir . '/w1024h1024/' . $this->fileSubDir . '/' . $this->fileName . '" width="' . $this->defaultWidth . '" height="' . $this->defaultHeight . '"></noscript>',
-			$this->evalMacro('{img ' . $this->fileName . ' lazy => true}')
+		Tester\Assert::same(
+			'<img data-src="/'
+			. "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName"
+			. '" class="lazy" alt="bar" width="'
+			. $this->defaultWidth
+			. '" height="'
+			. $this->defaultHeight
+			. '"><noscript><img src="/'
+			. "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName"
+			. '" alt="bar" width="'
+			. $this->defaultWidth
+			. '" height="'
+			. $this->defaultHeight
+			. '"></noscript>',
+			$this->evalMacro("{img $this->fileName lazy => true, alt => 'bar'}"),
 		);
-		Assert::same(
-			'<img data-src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '" class="lazy small-class" width="1000" height="1000" title="small-title">'
-			. '<noscript><img src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '" class="small-class" width="1000" height="1000" title="small-title"></noscript>',
-			$this->evalMacro('{img ' . $this->fileName . ' img-small lazy => true}')
+		Tester\Assert::same(
+			'<img data-src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '" class="lazy small-class" alt="x" width="1000" height="1000" title="small-title"><noscript><img src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '" class="small-class" alt="x" width="1000" height="1000" title="small-title"></noscript>',
+			$this->evalMacro("{img $this->fileName img-small lazy => true, alt => 'x'}"),
 		);
-		Assert::same(
-			'<img data-src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '" class="lazy small-class" alt="alt" width="500" height="1000" title="small-title">'
-			. '<noscript><img src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '" class="small-class" alt="alt" width="500" height="1000" title="small-title"></noscript>',
-			$this->evalMacro('{img ' . $this->fileName . ' img-small lazy => true, alt => "alt", width => 500}')
+		Tester\Assert::same(
+			'<img data-src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '" class="lazy small-class" alt="alt" width="500" height="1000" title="small-title"><noscript><img src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '" class="small-class" alt="alt" width="500" height="1000" title="small-title"></noscript>',
+			$this->evalMacro("{img $this->fileName img-small lazy => true, alt => 'alt', width => 500}"),
 		);
-		Assert::same(
-			'<img data-src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '" class="lazy foo bar" width="1000" height="1000" title="small-title">'
-			. '<noscript><img src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '" class="foo bar" width="1000" height="1000" title="small-title"></noscript>',
-			$this->evalMacro('{img ' . $this->fileName . ' img-small lazy => true, class => "foo bar"}')
+		Tester\Assert::same(
+			'<img data-src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '" class="lazy foo bar" alt="z" width="1000" height="1000" title="small-title"><noscript><img src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '" class="foo bar" alt="z" width="1000" height="1000" title="small-title"></noscript>',
+			$this->evalMacro("{img $this->fileName img-small lazy => true, class => 'foo bar', alt => 'z'}"),
 		);
 	}
 
 
-	public function testAttrMacroImg()
+	public function testAttrMacroImg(): void
 	{
-		Assert::same('<img src="/noimg.png">', $this->evalMacro('<img n:img="">'));
-		Assert::same(
+		Tester\Assert::same('<img src="/noimg.png">', $this->evalMacro('<img n:img>'));
+		Tester\Assert::same(
 			'<img alt="alt" src="/noimg.png">',
-			$this->evalMacro('<img n:img="foo.png img-small" alt="alt">')
+			$this->evalMacro('<img n:img="foo.png img-small" alt="alt">'),
 		);
-		Assert::same(
-			'<img alt="alt" src="/' . $this->imagesDir . '/w1024h1024/' . $this->fileSubDir . '/' . $this->fileName . '">',
-			$this->evalMacro('<img n:img="' . $this->fileName . '" alt="alt">')
+		Tester\Assert::same(
+			'<img alt="alt" src="/' . "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName" . '">',
+			$this->evalMacro('<img n:img="' . $this->fileName . '" alt="alt">'),
 		);
-		Assert::same(
-			'<img alt="alt" class="class" src="/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName . '">',
-			$this->evalMacro('<img n:img="' . $this->fileName . ' img-small" alt="alt" class="class">')
+		Tester\Assert::same(
+			'<img alt="alt" class="class" src="/'
+			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
+			. '">',
+			$this->evalMacro('<img n:img="' . $this->fileName . ' img-small" alt="alt" class="class">'),
 		);
-		Assert::same(
-			'<img alt="alt" class="class" src="/' . $this->imagesDir . '/w1024h1024/' . $this->fileSubDir . '/' . $this->fileName . '">',
-			$this->evalMacro('<img n:img="' . $this->fileName . ' img-foo" alt="alt" class="class">')
+		Tester\Assert::same(
+			'<img alt="alt" class="class" src="/'
+			. "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName"
+			. '">',
+			$this->evalMacro('<img n:img="' . $this->fileName . ' img-foo" alt="alt" class="class">'),
 		);
 	}
 
 
-	public function testMacroImgLink()
+	public function testMacroImgLink(): void
 	{
-		Assert::same('/noimg.png', $this->evalMacro('{imgLink}'));
-		Assert::same('/noimg.png', $this->evalMacro('{imgLink foo.png}'));
-		Assert::same(
-			'/' . $this->imagesDir . '/w1024h1024/' . $this->fileSubDir . '/' . $this->fileName,
-			$this->evalMacro('{imgLink ' . $this->fileName . '}')
+		Tester\Assert::same('/noimg.png', $this->evalMacro('{imgLink}'));
+		Tester\Assert::same('/noimg.png', $this->evalMacro('{imgLink foo.png}'));
+		Tester\Assert::same(
+			"/$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName",
+			$this->evalMacro("{imgLink $this->fileName}"),
 		);
-		Assert::same(
-			'/' . $this->imagesDir . '/w20h1024/' . $this->fileSubDir . '/' . $this->fileName,
-			$this->evalMacro('{imgLink ' . $this->fileName . ' width => 20}')
+		Tester\Assert::same(
+			"/$this->imagesDir/w20h1024/$this->fileSubDir/$this->fileName",
+			$this->evalMacro("{imgLink $this->fileName width => 20}"),
 		);
-		Assert::same(
-			'/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName,
-			$this->evalMacro('{imgLink ' . $this->fileName . ' img-small}')
+		Tester\Assert::same(
+			"/$this->imagesDir/img-small/$this->fileSubDir/$this->fileName",
+			$this->evalMacro("{imgLink $this->fileName img-small}"),
 		);
-		Assert::same(
-			'/' . $this->imagesDir . '/img-small/' . $this->fileSubDir . '/' . $this->fileName,
-			$this->evalMacro('{imgLink ' . $this->fileName . ' img-small width => 20}')
+		Tester\Assert::same(
+			"/$this->imagesDir/img-small/$this->fileSubDir/$this->fileName",
+			$this->evalMacro("{imgLink $this->fileName img-small width => 20}"),
+		);
+		Tester\Assert::same(
+			"/$this->imagesDir/" . IMAGES_EXTENSION_CONFIG['compressionDir'] . "/$this->fileSubDir/$this->fileName",
+			$this->evalMacro(
+				"{imgLink $this->fileName img-small " . Harmim\Images\ImageStorage::RETURN_COMPRESSED . ' => true}',
+			),
 		);
 	}
 
@@ -197,10 +260,10 @@ class MacrosTest extends Tester\TestCase
 			Tester\FileMock::create($content, 'latte'),
 			[
 				'imageStorage' => $this->imageStorage,
-			]
+			],
 		);
 	}
 }
 
 
-run(new MacrosTest());
+(new MacrosTest())->run();
