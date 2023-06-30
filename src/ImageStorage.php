@@ -11,32 +11,17 @@ namespace Harmim\Images;
 use Nette;
 
 
-class ImageStorage
+readonly class ImageStorage
 {
-	use Nette\SmartObject;
-
-
-	public const RETURN_ORIG = 'return_orig',
+	final public const
+		RETURN_ORIG = 'return_orig',
 		RETURN_COMPRESSED = 'return_compressed';
 
-	public const RESIZE_SHRINK_ONLY = 'shrink_only',
-		RESIZE_STRETCH = 'stretch',
-		RESIZE_FIT = 'fit',
-		RESIZE_FILL = 'fill',
-		RESIZE_EXACT = 'exact',
-		RESIZE_FILL_EXACT = 'fill_exact';
 
-	private const RESIZE_FLAGS = [
-		self::RESIZE_SHRINK_ONLY => Nette\Utils\Image::SHRINK_ONLY,
-		self::RESIZE_STRETCH => Nette\Utils\Image::STRETCH,
-		self::RESIZE_FIT => Nette\Utils\Image::FIT,
-		self::RESIZE_FILL => Nette\Utils\Image::FILL,
-		self::RESIZE_EXACT => Nette\Utils\Image::EXACT,
-	];
-
-	private array $config;
-
-	private array $types = [];
+	/**
+	 * @var array<string, mixed>
+	 */
+	private array $types;
 
 	private string $baseDir;
 
@@ -47,12 +32,12 @@ class ImageStorage
 	private string $compressionDir;
 
 
-	public function __construct(array $config)
+	/**
+	 * @param array<string, mixed> $config
+	 */
+	public function __construct(private array $config)
 	{
-		if ($config['types'] && is_array($config['types'])) {
-			$this->types = $config['types'];
-		}
-		$this->config = $config;
+		$this->types = $config['types'] && is_array($config['types']) ? $config['types'] : [];
 		$this->baseDir = $config['wwwDir'] . DIRECTORY_SEPARATOR . $config['imagesDir'];
 		$this->placeholder = $config['wwwDir'] . DIRECTORY_SEPARATOR . $config['placeholder'];
 		$this->origDir = $this->baseDir . DIRECTORY_SEPARATOR . $config['origDir'];
@@ -70,10 +55,10 @@ class ImageStorage
 	public function saveUpload(Nette\Http\FileUpload $file): string
 	{
 		if ($file->isOk()) {
-			return $this->saveImage((string) $file->getName(), (string) $file->getTemporaryFile());
+			return $this->saveImage($file->getSanitizedName(), $file->getTemporaryFile());
 		}
 
-		throw new Nette\IOException($file->getError());
+		throw new Nette\IOException("Upload error code: {$file->getError()}.");
 	}
 
 
@@ -93,7 +78,7 @@ class ImageStorage
 			'error' => UPLOAD_ERR_OK,
 		]);
 
-		$fileName = $this->getUniqueFileName($file->getName());
+		$fileName = $this->getUniqueFileName($file->getSanitizedName());
 		$origPath = $this->getOrigPath($fileName);
 
 		$file->move($origPath);
@@ -111,7 +96,7 @@ class ImageStorage
 
 	/**
 	 * @param string $file
-	 * @param string[] $excludedTypes
+	 * @param list<string> $excludedTypes
 	 * @return void
 	 */
 	public function deleteImage(string $file, array $excludedTypes = []): void
@@ -122,7 +107,7 @@ class ImageStorage
 		}
 
 		foreach ($this->types as $key => $value) {
-			if (!$excludedTypes || !in_array($key, $excludedTypes, true)) {
+			if (!$excludedTypes || !in_array($key, $excludedTypes, strict: true)) {
 				Nette\Utils\FileSystem::delete($this->getDestPath($file, ['type' => $key]));
 			}
 		}
@@ -144,19 +129,19 @@ class ImageStorage
 
 	/**
 	 * @param string $file
-	 * @param string|null $type
-	 * @param array $options
-	 * @return string|null
+	 * @param ?string $type
+	 * @param array<string, mixed> $config
+	 * @return ?string
 	 *
 	 * @throws Nette\Utils\ImageException
 	 */
-	public function getImageLink(string $file, ?string $type = null, array $options = []): ?string
+	public function getImageLink(string $file, ?string $type = null, array $config = []): ?string
 	{
 		if ($type !== null) {
-			$options['type'] = $type;
+			$config['type'] = $type;
 		}
 
-		return ($image = $this->getImage($file, $options)) ? (string) $image : null;
+		return ($image = $this->getImage($file, $config)) ? (string) $image : null;
 	}
 
 
@@ -164,28 +149,28 @@ class ImageStorage
 	 * @internal
 	 *
 	 * @param string $file
-	 * @param array $args
-	 * @return Image|null
+	 * @param array<string, mixed> $config
+	 * @return ?Image
 	 *
 	 * @throws Nette\Utils\ImageException
 	 */
-	public function getImage(string $file, array $args = []): ?Image
+	final public function getImage(string $file, array &$config = []): ?Image
 	{
-		$options = $this->getOptions($args);
+		$config = $this->getConfig($config);
 		$srcPath = $this->getCompressionPath($file);
 
 		if (!$file || !is_readable($srcPath)) {
-			return $this->getPlaceholderImage($options);
+			return $this->getPlaceholderImage($config);
 		}
 
-		$destPath = $this->getDestPath($file, $options);
+		$destPath = $this->getDestPath($file, $config);
 
 		if (is_readable($destPath)) {
 			[$width, $height] = getimagesize($destPath);
-		} elseif ($image = $this->createImage($srcPath, $destPath, $options)) {
+		} elseif ($image = $this->createImage($srcPath, $destPath, $config)) {
 			[$width, $height] = $image;
 		} else {
-			return $this->getPlaceholderImage($options);
+			return $this->getPlaceholderImage($config);
 		}
 
 		return new Image($this->createRelativeWWWPath($destPath), (int) $width, (int) $height);
@@ -198,7 +183,7 @@ class ImageStorage
 	 * @param string $fileName
 	 * @return string
 	 */
-	public function getSubDir(string $fileName): string
+	final public function getSubDir(string $fileName): string
 	{
 		return (string) (ord(substr($fileName, 0, 1)) % 42);
 	}
@@ -207,37 +192,37 @@ class ImageStorage
 	/**
 	 * @internal
 	 *
-	 * @param array $args
-	 * @return array
+	 * @param array<string, mixed> $config
+	 * @return array<string, mixed>
 	 */
-	public function getOptions(array $args = []): array
+	final public function getConfig(array $config = []): array
 	{
 		$type = [];
 
 		if (
-			!empty($args['type'])
-			&& array_key_exists($args['type'], $this->types)
-			&& is_array($this->types[$args['type']])
+			!empty($config['type'])
+			&& array_key_exists($config['type'], $this->types)
+			&& is_array($this->types[$config['type']])
 		) {
-			$type = $this->types[$args['type']];
+			$type = $this->types[$config['type']];
 		}
 
-		return $args + $type + $this->config;
+		return $config + $type + $this->config;
 	}
 
 
 	/**
 	 * @param string $srcPath
 	 * @param string $destPath
-	 * @param array $options
-	 * @return array
+	 * @param array<string, mixed> $config
+	 * @return array{int, int}
 	 *
 	 * @throws Nette\Utils\ImageException
 	 */
-	private function createImage(string $srcPath, string $destPath, array $options = []): array
+	private function createImage(string $srcPath, string $destPath, array $config = []): array
 	{
-		if (!$options) {
-			$options = $this->config;
+		if (!$config) {
+			$config = $this->config;
 		}
 
 		try {
@@ -246,9 +231,9 @@ class ImageStorage
 
 			Nette\Utils\FileSystem::createDir(dirname($destPath));
 
-			$this->transformImage($image, $options, $srcPath, $type);
+			$this->transformImage($image, $config, $srcPath, $type);
 
-			$image->sharpen()->save($destPath, $options['compression'] ?: null, $type);
+			$image->sharpen()->save($destPath, $config['compression'] ?: null, $type);
 
 			return [$image->getWidth(), $image->getHeight()];
 
@@ -258,37 +243,53 @@ class ImageStorage
 	}
 
 
-	private function transformImage(Nette\Utils\Image &$image, array $options, string $srcPath, ?int &$type): void
+	/**
+	 * @param Nette\Utils\Image $image
+	 * @param array<string, mixed> $config
+	 * @param string $srcPath
+	 * @param ?int $type
+	 * @return void
+	 */
+	private function transformImage(Nette\Utils\Image &$image, array $config, string $srcPath, ?int &$type): void
 	{
-		$resizeFlags = static::RESIZE_FLAGS[static::RESIZE_FIT];
+		$resizeFlags = Resize::OR_SMALLER->flag();
 
-		if (!empty($options['transform'])) {
-			if (strpos($options['transform'], '|') !== false) {
-				$resizeFlags = 0;
-
-				foreach (explode('|', $options['transform']) as $flag) {
-					if (isset(static::RESIZE_FLAGS[$flag])) {
-						$resizeFlags |= static::RESIZE_FLAGS[$flag];
-					} elseif ($flag === static::RESIZE_FILL_EXACT) {
-						$this->transformFillExact($image, $options, $srcPath, $type);
+		if (!empty($config['transform'])) {
+			if (is_array($config['transform']) && count($config['transform']) > 1) {
+				foreach ($config['transform'] as $resize) {
+					if ($resize === Resize::EXACT) {
+						$this->transformExact($image, $config, $srcPath, $type);
 
 						return;
+					} elseif ($resize instanceof Resize) {
+						$resizeFlags |= $resize->flag();
 					}
 				}
-			} elseif (isset(static::RESIZE_FLAGS[$options['transform']])) {
-				$resizeFlags = static::RESIZE_FLAGS[$options['transform']];
-			} elseif ($options['transform'] === static::RESIZE_FILL_EXACT) {
-				$this->transformFillExact($image, $options, $srcPath, $type);
+			} else {
+				$resize = is_array($config['transform']) ? $config['transform'][0] : $config['transform'];
 
-				return;
+				if ($resize === Resize::EXACT){
+					$this->transformExact($image, $config, $srcPath, $type);
+
+					return;
+				} elseif ($resize instanceof Resize){
+					$resizeFlags = $resize->flag();
+				}
 			}
 		}
 
-		$image->resize($options['width'], $options['height'], $resizeFlags);
+		$image->resize($config['width'], $config['height'], $resizeFlags);
 	}
 
 
-	private function transformFillExact(Nette\Utils\Image &$image, array $options, string $srcPath, ?int &$type): void
+	/**
+	 * @param Nette\Utils\Image $image
+	 * @param array<string, mixed> $config
+	 * @param string $srcPath
+	 * @param ?int $type
+	 * @return void
+	 */
+	private function transformExact(Nette\Utils\Image &$image, array $config, string $srcPath, ?int &$type): void
 	{
 		if ($this->isTransparentPng($srcPath)) {
 			$color = Nette\Utils\Image::rgb(255, 255, 255, 127);
@@ -296,13 +297,13 @@ class ImageStorage
 			$color = Nette\Utils\Image::rgb(255, 255, 255);
 		}
 
-		$blank = Nette\Utils\Image::fromBlank($options['width'], $options['height'], $color);
-		$image->resize($options['width'], null);
-		$image->resize(null, $options['height']);
+		$blank = Nette\Utils\Image::fromBlank($config['width'], $config['height'], $color);
+		$image->resize($config['width'], null);
+		$image->resize(null, $config['height']);
 		$blank->place(
 			$image,
-			(int) ($options['width'] / 2 - $image->getWidth() / 2),
-			(int) ($options['height'] / 2 - $image->getHeight() / 2),
+			(int) ($config['width'] / 2 - $image->getWidth() / 2),
+			(int) ($config['height'] / 2 - $image->getHeight() / 2),
 		);
 		$image = $blank;
 		$type = Nette\Utils\Image::PNG;
@@ -332,7 +333,11 @@ class ImageStorage
 	}
 
 
-	private function getPlaceholderImage(array $options): ?Image
+	/**
+	 * @param array<string, mixed> $config
+	 * @return ?Image
+	 */
+	private function getPlaceholderImage(array $config): ?Image
 	{
 		if (!is_readable($this->placeholder)) {
 			return null;
@@ -340,8 +345,8 @@ class ImageStorage
 
 		return new Image(
 			$this->createRelativeWWWPath($this->placeholder),
-			(int) $options['width'],
-			(int) $options['height'],
+			(int) $config['width'],
+			(int) $config['height'],
 		);
 	}
 
@@ -369,22 +374,27 @@ class ImageStorage
 	}
 
 
-	private function getDestPath(string $fileName, array $options = []): string
+	/**
+	 * @param string $fileName
+	 * @param array<string, mixed> $config
+	 * @return string
+	 */
+	private function getDestPath(string $fileName, array $config): string
 	{
-		if (!$options) {
-			$options = $this->config;
+		if (!$config) {
+			$config = $this->config;
 		}
 
-		if (!empty($options[static::RETURN_ORIG])) {
+		if (!empty($config[self::RETURN_ORIG])) {
 			return $this->getOrigPath($fileName);
-		} elseif (!empty($options[static::RETURN_COMPRESSED])) {
+		} elseif (!empty($config[self::RETURN_COMPRESSED])) {
 			return $this->getCompressionPath($fileName);
-		} elseif (!empty($options['destDir'])) {
-			$destDir = $options['destDir'];
-		} elseif (!empty($options['type']) && array_key_exists($options['type'], $this->types)) {
-			$destDir = $options['type'];
+		} elseif (!empty($config['destDir'])) {
+			$destDir = $config['destDir'];
+		} elseif (!empty($config['type']) && array_key_exists($config['type'], $this->types)) {
+			$destDir = $config['type'];
 		} else {
-			$destDir = "w{$options['width']}h{$options['height']}";
+			$destDir = "w{$config['width']}h{$config['height']}";
 		}
 
 		return

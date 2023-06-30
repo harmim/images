@@ -11,11 +11,11 @@ VENDOR_DIR := vendor
 VENDOR_BIN_DIR := $(VENDOR_DIR)/bin
 
 CODE_CHECKER := nette/code-checker
-CODE_CHECKER_VERSION := ~3.2.3
+CODE_CHECKER_VERSION := ~3.3.0
 CODE_CHECKER_DIR := $(TEMP_DIR)/code-checker
 
 COVERALLS := php-coveralls/php-coveralls
-COVERALLS_VERSION := ^2.5.3
+COVERALLS_VERSION := ^2.5
 COVERALLS_DIR := $(TEMP_DIR)/coveralls
 
 ifeq ($(CI), 1)

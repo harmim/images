@@ -5,12 +5,12 @@
 declare(strict_types=1);
 
 /**
- * Test: Macros
+ * TEST: Latte ImagesExtension.
  *
  * @author Dominik Harmim <harmim6@gmail.com>
  */
 
-namespace Harmim\Tests\Macros;
+namespace Harmim\Tests\Latte;
 
 use Harmim;
 use Latte;
@@ -24,11 +24,8 @@ require __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'bootstrap.
 /**
  * @testCase
  */
-class MacrosTest extends Tester\TestCase
+final class ImagesExtension extends Tester\TestCase
 {
-	use Nette\SmartObject;
-
-
 	private Latte\Engine $latteEngine;
 
 	private Harmim\Images\ImageStorage $imageStorage;
@@ -53,7 +50,7 @@ class MacrosTest extends Tester\TestCase
 	protected function setUp(): void
 	{
 		$this->latteEngine = new Latte\Engine();
-		Harmim\Images\Template\Macros::install($this->latteEngine->getCompiler());
+		$this->latteEngine->addExtension(new Harmim\Images\Latte\ImagesExtension());
 
 		$this->imageStorage = new Harmim\Images\ImageStorage(IMAGES_EXTENSION_CONFIG);
 
@@ -80,7 +77,7 @@ class MacrosTest extends Tester\TestCase
 	{
 		try {
 			$rndInt = random_int(0, PHP_INT_MAX);
-		} catch (\Throwable $e) {
+		} catch (\Throwable) {
 			$rndInt = 42;
 		}
 
@@ -203,23 +200,23 @@ class MacrosTest extends Tester\TestCase
 	{
 		Tester\Assert::same('<img src="/noimg.png">', $this->evalMacro('<img n:img>'));
 		Tester\Assert::same(
-			'<img alt="alt" src="/noimg.png">',
+			'<img src="/noimg.png" alt="alt">',
 			$this->evalMacro('<img n:img="foo.png img-small" alt="alt">'),
 		);
 		Tester\Assert::same(
-			'<img alt="alt" src="/' . "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName" . '">',
+			'<img src="/' . "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName" . '" alt="alt">',
 			$this->evalMacro('<img n:img="' . $this->fileName . '" alt="alt">'),
 		);
 		Tester\Assert::same(
-			'<img alt="alt" class="class" src="/'
+			'<img src="/'
 			. "$this->imagesDir/img-small/$this->fileSubDir/$this->fileName"
-			. '">',
+			. '" alt="alt" class="class">',
 			$this->evalMacro('<img n:img="' . $this->fileName . ' img-small" alt="alt" class="class">'),
 		);
 		Tester\Assert::same(
-			'<img alt="alt" class="class" src="/'
+			'<img src="/'
 			. "$this->imagesDir/w1024h1024/$this->fileSubDir/$this->fileName"
-			. '">',
+			. '" alt="alt" class="class">',
 			$this->evalMacro('<img n:img="' . $this->fileName . ' img-foo" alt="alt" class="class">'),
 		);
 	}
@@ -266,4 +263,4 @@ class MacrosTest extends Tester\TestCase
 }
 
 
-(new MacrosTest())->run();
+run(new ImagesExtension());

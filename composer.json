@@ -14,26 +14,30 @@
 		}
 	],
 	"require": {
-		"php": ">=7.4",
-		"ext-gd": "*",
+		"php": ">=8.2",
 		"ext-fileinfo": "*",
-		"nette/di": "^2.4",
-		"nette/utils": "^2.4",
-		"latte/latte": "^2.4",
-		"nette/http": "^2.4",
-		"nette/finder": "^2.4"
+		"ext-gd": "*",
+		"ext-intl": "*",
+		"latte/latte": "^3.0",
+		"nette/di": "^3.1",
+		"nette/http": "^3.2",
+		"nette/utils": "^4.0"
 	},
 	"require-dev": {
-		"nette/tester": "^2.0"
+		"nette/application": "^3.1",
+		"nette/tester": "^2.5"
+	},
+	"suggest": {
+		"nette/application": "To use the 'Harmim\\Images\\TImageStorage' trait."
 	},
 	"autoload": {
 		"psr-4": {
-			"Harmim\\Images\\": "src/"
+			"Harmim\\Images\\": "src"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Harmim\\Tests\\": "tests/"
+			"Harmim\\Tests\\": "tests"
 		}
 	}
 }

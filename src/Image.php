@@ -12,27 +12,17 @@ use Nette;
 
 
 /**
- * @property string $src
- * @property int $width
- * @property int $height
+ * @property-read string $src
+ * @property-read int $width
+ * @property-read int $height
  */
-class Image
+final readonly class Image implements \Stringable
 {
 	use Nette\SmartObject;
 
 
-	private string $src;
-
-	private int $width;
-
-	private int $height;
-
-
-	public function __construct(string $src, int $width, int $height)
+	public function __construct(private string $src, private int $width, private int $height)
 	{
-		$this->src = $src;
-		$this->width = $width;
-		$this->height = $height;
 	}
 
 
@@ -42,39 +32,15 @@ class Image
 	}
 
 
-	public function setSrc(string $src): self
-	{
-		$this->src = $src;
-
-		return $this;
-	}
-
-
 	public function getWidth(): int
 	{
 		return $this->width;
 	}
 
 
-	public function setWidth(int $width): self
-	{
-		$this->width = $width;
-
-		return $this;
-	}
-
-
 	public function getHeight(): int
 	{
 		return $this->height;
-	}
-
-
-	public function setHeight(int $height): self
-	{
-		$this->height = $height;
-
-		return $this;
 	}
 
 
