@@ -1,0 +1,14 @@
+includes:
+	- vendor/phpstan/phpstan-nette/extension.neon
+	- vendor/phpstan/phpstan-nette/rules.neon
+	- vendor/phpstan/phpstan-strict-rules/rules.neon
+	- vendor/phpstan/phpstan-deprecation-rules/rules.neon
+	- vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+	level: max
+	paths: [src, tests]
+	ignoreErrors:
+		-
+			path: src/TImageStorage.php
+			message: '~^Trait Harmim\\Images\\TImageStorage is used zero times and is not analysed\.$~'

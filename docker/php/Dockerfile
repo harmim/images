@@ -1,5 +1,3 @@
-# Author: Dominik Harmim <harmim6@gmail.com>
-
 FROM php:8.2-cli
 
 RUN apt-get update -y && \
@@ -17,7 +15,9 @@ RUN docker-php-ext-install  \
     gd \
     intl
 
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
-    php composer-setup.php --install-dir=/usr/bin --filename=composer --quiet && \
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+      && \
+    php composer-setup.php --install-dir=/usr/bin --filename=composer \
+      --quiet && \
     rm -f composer-setup.php
 ENV COMPOSER_ALLOW_SUPERUSER 1

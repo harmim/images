@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-/**
- * @author Dominik Harmim <harmim6@gmail.com>
- */
 
-
-require __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+require __DIR__
+	. DIRECTORY_SEPARATOR
+	. '..'
+	. DIRECTORY_SEPARATOR
+	. 'vendor'
+	. DIRECTORY_SEPARATOR
+	. 'autoload.php';
 
 
 function run(Tester\TestCase $testCase): void
@@ -23,15 +25,18 @@ Tester\Environment::setupFunctions();
 
 try {
 	$rndInt = random_int(0, PHP_INT_MAX);
-} catch (\Throwable) {
+} catch (Throwable) {
 	$rndInt = 42;
 }
-define('__TEMP_DIR__', __DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $rndInt);
-Nette\Utils\FileSystem::createDir(dirname(__TEMP_DIR__));
-Tester\Helpers::purge(__TEMP_DIR__);
+define(
+	'TEMP_DIR',
+	__DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . $rndInt,
+);
+Nette\Utils\FileSystem::createDir(dirname(TEMP_DIR));
+Tester\Helpers::purge(TEMP_DIR);
 
 const IMAGES_EXTENSION_CONFIG = [
-	'wwwDir' => __TEMP_DIR__,
+	'wwwDir' => TEMP_DIR,
 	'placeholder' => 'noimg.png',
 	'types' => [
 		'img-small' => [
@@ -41,4 +46,4 @@ const IMAGES_EXTENSION_CONFIG = [
 			'title' => 'small-title',
 		],
 	],
-] + Harmim\Images\DI\ImagesExtension::DEFAULTS;
+] + Harmim\Images\Config\Config::Defaults;

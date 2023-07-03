@@ -1,13 +1,18 @@
-# Author: Dominik Harmim <harmim6@gmail.com>
-
 name: Coding Style
 
 on: [push, pull_request]
 
 jobs:
-  nette-cc:
-    name: Nette Code Checker
+  code-checker:
+    name: Code Checker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - run: make code-checker CI=1
+
+  coding-standard:
+    name: Coding Standard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: make coding-standard CI=1

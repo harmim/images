@@ -2,39 +2,33 @@
 
 declare(strict_types=1);
 
-/**
- * @author Dominik Harmim <harmim6@gmail.com>
- */
-
 namespace Harmim\Images;
 
 use Nette;
 
 
-enum Resize: string
+enum Resize
 {
-	case SHRINK_ONLY = 'shrink_only';
-
-	case STRETCH = 'stretch';
-
-	case OR_SMALLER = 'or_smaller';
-
-	case OR_BIGGER = 'or_bigger';
-
-	case COVER = 'cover';
-
-	case EXACT = 'exact';
+	case ShrinkOnly;
+	case Stretch;
+	case OrSmaller;
+	case OrBigger;
+	case Cover;
+	case Exact;
 
 
-	final public function flag(): ?int
+	/**
+	 * @return Nette\Utils\Image::ShrinkOnly|Nette\Utils\Image::Stretch|Nette\Utils\Image::OrSmaller|Nette\Utils\Image::OrBigger|Nette\Utils\Image::Cover|null
+	 */
+	public function flag(): ?int
 	{
 		return match ($this) {
-			self::SHRINK_ONLY => Nette\Utils\Image::ShrinkOnly,
-			self::STRETCH => Nette\Utils\Image::Stretch,
-			self::OR_SMALLER => Nette\Utils\Image::OrSmaller,
-			self::OR_BIGGER => Nette\Utils\Image::OrBigger,
-			self::COVER => Nette\Utils\Image::Cover,
-			self::EXACT => null,
+			self::ShrinkOnly => Nette\Utils\Image::ShrinkOnly,
+			self::Stretch => Nette\Utils\Image::Stretch,
+			self::OrSmaller => Nette\Utils\Image::OrSmaller,
+			self::OrBigger => Nette\Utils\Image::OrBigger,
+			self::Cover => Nette\Utils\Image::Cover,
+			self::Exact => null,
 		};
 	}
 }

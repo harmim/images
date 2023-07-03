@@ -4,10 +4,6 @@
 
 declare(strict_types=1);
 
-/**
- * @author Dominik Harmim <harmim6@gmail.com>
- */
-
 namespace Harmim\Images;
 
 use Nette;
@@ -24,7 +20,9 @@ trait TImageStorage
 	}
 
 
-	protected function createTemplate(?string $class = null): Nette\Application\UI\Template
+	protected function createTemplate(
+		?string $class = null,
+	): Nette\Application\UI\Template
 	{
 		$template = parent::createTemplate($class);
 		$template->imageStorage = $this->imageStorage;

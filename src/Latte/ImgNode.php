@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @author Dominik Harmim <harmim6@gmail.com>
- */
-
 namespace Harmim\Images\Latte;
 
 use Harmim;
@@ -18,38 +14,57 @@ class ImgNode extends Latte\Compiler\Nodes\StatementNode
 	public function __construct(
 		private readonly ?Latte\Compiler\Nodes\Php\ExpressionNode $file,
 		private readonly ?Latte\Compiler\Nodes\Php\ExpressionNode $type,
-		private readonly Latte\Compiler\Nodes\Php\Expression\ArrayNode $config,
+		private readonly Latte\Compiler\Nodes\Php\Expression\ArrayNode $options,
 		private readonly string $tagName,
 		private readonly bool $isNattribute,
 	) {
 	}
 
 
-	public static function create(Latte\Compiler\Tag $tag): ?static
+	public static function create(Latte\Compiler\Tag $tag): self
 	{
 		$i = $tag->parser->stream->getIndex();
-		$file = $tag->parser->isEnd() ? null : $tag->parser->parseUnquotedStringOrExpression();
-		if ($tag->parser->stream->tryConsume('=>', ':')) {
+		$file = $tag->parser->isEnd()
+			? null
+			: $tag->parser->parseUnquotedStringOrExpression();
+		if ($tag->parser->stream->tryConsume('=>', ':') !== null) {
 			$file = null;
 			$tag->parser->stream->seek($i);
 		}
 
 		$i = $tag->parser->stream->getIndex();
-		$type = $tag->parser->isEnd() ? null : $tag->parser->parseUnquotedStringOrExpression();
-		if ($tag->parser->stream->tryConsume('=>', ':')) {
+		$type = $tag->parser->isEnd()
+			? null
+			: $tag->parser->parseUnquotedStringOrExpression();
+		if ($tag->parser->stream->tryConsume('=>', ':') !== null) {
 			$type = null;
 			$tag->parser->stream->seek($i);
 		}
 
 		if ($tag->isNAttribute()) {
-			$node = new static($file, $type, $tag->parser->parseArguments(), $tag->name, isNattribute: true);
+			$node = new self(
+				$file,
+				$type,
+				$tag->parser->parseArguments(),
+				$tag->name,
+				isNattribute: true,
+			);
 			$node->position = $tag->position;
-			array_unshift($tag->htmlElement->attributes->children, $node);
+			$children = $tag->htmlElement?->attributes?->children;
+			if ($children !== null) {
+				array_unshift($children, $node);
+			}
 
-			return null;
+			return $node;
 		}
 
-		return new static($file, $type, $tag->parser->parseArguments(), $tag->name, isNattribute: false);
+		return new self(
+			$file,
+			$type,
+			$tag->parser->parseArguments(),
+			$tag->name,
+			isNattribute: false,
+		);
 	}
 
 
@@ -63,7 +78,7 @@ class ImgNode extends Latte\Compiler\Nodes\StatementNode
 				'echo \' src="\' . %s::imgLink(%s, %s, $imageStorage) . \'"\';',
 				static::class,
 				$this->formatFile($context),
-				$this->formatConfig($context),
+				$this->formatOptions($context),
 			);
 			$context->restoreEscape();
 
@@ -75,7 +90,7 @@ class ImgNode extends Latte\Compiler\Nodes\StatementNode
 			static::class,
 			$this->tagName === 'imgLink' ? 'imgLink' : 'img',
 			$this->formatFile($context),
-			$this->formatConfig($context),
+			$this->formatOptions($context),
 		);
 	}
 
@@ -85,78 +100,82 @@ class ImgNode extends Latte\Compiler\Nodes\StatementNode
 	 */
 	public function &getIterator(): \Generator
 	{
-		if ($this->file) {
+		if ($this->file !== null) {
 			yield $this->file;
 		}
-		if ($this->type) {
+		if ($this->type !== null) {
 			yield $this->type;
 		}
-		yield $this->config;
+		yield $this->options;
 	}
 
 
 	private function formatFile(Latte\Compiler\PrintContext $context): string
 	{
-		return $this->file ? $context->format('%node', $this->file) : "''";
+		return $this->file === null
+			? "''"
+			: $context->format('%node', $this->file);
 	}
 
 
-	private function formatConfig(Latte\Compiler\PrintContext $context): string
+	private function formatOptions(Latte\Compiler\PrintContext $context): string
 	{
-		$config = $this->config->toArguments();
+		$options = $this->options->toArguments();
 
 		return sprintf(
-			"[%s%s]",
-			$this->type ? $context->format("'type' => %node, ", $this->type) : '',
-			$config ? preg_replace('~(^|,\s)([^:]+):\s~', "$1'$2' => ", $context->format('%args', $config)) : '',
+			'[%s%s]',
+			$this->type === null
+				? ''
+				: $context->format("'type' => %node, ", $this->type),
+			count($options) === 0
+				? ''
+				: preg_replace(
+					'~(^|,\s)([^:]+):\s~',
+					"$1'$2' => ",
+					$context->format('%args', $options),
+				),
 		);
 	}
 
 
 	/**
-	 * @param string $file
-	 * @param array<string, mixed> $config
-	 * @param Harmim\Images\ImageStorage $imageStorage
-	 * @return ?string
-	 *
+	 * @param  array<string, mixed>  $options
 	 * @throws Nette\Utils\ImageException
 	 */
-	public static function img(string $file, array $config, Harmim\Images\ImageStorage $imageStorage): ?string
+	public static function img(
+		string $file,
+		array $options,
+		Harmim\Images\ImageStorage $imageStorage,
+	): ?string
 	{
-		if (!($image = $imageStorage->getImage($file, $config))) {
+		if (($image = $imageStorage->getImage($file, $options)) === null) {
 			return null;
 		}
 
-		$lazy = !empty($config['lazy']);
+		$config = $imageStorage->getConfig($options);
+		$attrs = $config->imgTagAttrs;
 
-		$attrs = array_filter($config, static function (string $key) use ($config): bool {
-			foreach ($config['imgTagAttributes'] as $attr) {
-				if (str_starts_with($key, $attr)) {
-					return true;
-				}
-			}
-
-			return false;
-		}, ARRAY_FILTER_USE_KEY);
-
-		$classes = explode(' ', $attrs['class'] ?? '');
+		$classes = explode(
+			' ',
+			isset($attrs['class']) ? (string) $attrs['class'] : '',
+		);
 		unset($attrs['class']);
 
 		$imgTag = Nette\Utils\Html::el('img');
 		$imgTag->src = (string) $image;
 		$imgTag->class = $classes;
 		$imgTag->addAttributes($attrs);
-		if (empty($attrs['alt'])) {
+		if (!isset($attrs['alt']) || (string) $attrs['alt'] === '') {
 			$imgTag->alt = (string) $image;
 		}
 
-		if ($lazy) {
+		if ($config->lazy) {
 			$lazyImgTag = Nette\Utils\Html::el('img');
 			$lazyImgTag->data('src', (string) $image);
 			array_unshift($classes, 'lazy');
 			$lazyImgTag->class = $classes;
 			$lazyImgTag->addAttributes($attrs);
-			if (empty($attrs['alt'])) {
+			if (!isset($attrs['alt']) || (string) $attrs['alt'] === '') {
 				$lazyImgTag->alt = (string) $image;
 			}
 
@@ -175,15 +194,15 @@ class ImgNode extends Latte\Compiler\Nodes\StatementNode
 
 
 	/**
-	 * @param string $file
-	 * @param array<string, mixed> $config
-	 * @param Harmim\Images\ImageStorage $imageStorage
-	 * @return ?string
-	 *
+	 * @param  array<string, mixed>  $options
 	 * @throws Nette\Utils\ImageException
 	 */
-	public static function imgLink(string $file, array $config, Harmim\Images\ImageStorage $imageStorage): ?string
+	public static function imgLink(
+		string $file,
+		array $options,
+		Harmim\Images\ImageStorage $imageStorage,
+	): ?string
 	{
-		return ($image = $imageStorage->getImage($file, $config)) ? (string) $image : null;
+		return $imageStorage->getImageLink($file, options: $options);
 	}
 }

@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * @author Dominik Harmim <harmim6@gmail.com>
- */
-
 namespace Harmim\Images;
 
 use Nette;
@@ -20,9 +16,11 @@ final readonly class Image implements \Stringable
 {
 	use Nette\SmartObject;
 
-
-	public function __construct(private string $src, private int $width, private int $height)
-	{
+	public function __construct(
+		private string $src,
+		private int $width,
+		private int $height,
+	) {
 	}
 
 
